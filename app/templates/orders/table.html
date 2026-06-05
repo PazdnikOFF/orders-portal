@@ -3,25 +3,20 @@
 {% block content %}
 
 <div class="toolbar">
-  <form method="get" class="toolbar" style="margin:0;flex:1">
-    <input class="input" type="search" name="q" value="{{ q }}" placeholder="Поиск: номер, менеджер, организация, комплект"
-           style="max-width:340px">
-    <select class="input" name="status" style="max-width:170px" onchange="this.form.submit()">
-      <option value="">Все статусы</option>
-      {% for val, label in statuses %}
-        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    <button class="btn secondary" type="submit">Найти</button>
-  </form>
+  <strong>Заказы</strong>
+  {% if has_filters %}
+    <a class="btn secondary sm" href="{% url 'orders:table' %}">✕ Сбросить фильтры</a>
+  {% endif %}
   <div class="spacer"></div>
   {% if caps.create_orders %}
-    <button class="btn" hx-get="{% url 'orders:new' %}" hx-target="#card-block" hx-swap="innerHTML"
-            onclick="document.getElementById('card-wrap').setAttribute('data-open','1')">
+    <button class="btn" hx-get="{% url 'orders:new' %}" hx-target="#card-block" hx-swap="innerHTML">
       + Добавить заказ
     </button>
   {% endif %}
 </div>
+
+{# Per-column filters submit this form; row status-selects are NOT associated. #}
+<form id="filters" method="get" action="{% url 'orders:table' %}"></form>
 
 <div class="panel" style="overflow:auto">
   <table class="grid">
@@ -37,12 +32,40 @@
         <th>Номер заказа</th>
         <th>Статус</th>
       </tr>
+      <tr class="filter-row">
+        <th><input form="filters" name="f_manager" class="input" value="{{ request.GET.f_manager }}"
+                   placeholder="фильтр…" onchange="this.form.submit()"></th>
+        <th><input form="filters" name="f_distributor" class="input" value="{{ request.GET.f_distributor }}"
+                   placeholder="назв./ИНН" onchange="this.form.submit()"></th>
+        <th><input form="filters" name="f_potential" class="input" value="{{ request.GET.f_potential }}"
+                   placeholder="назв./ИНН" onchange="this.form.submit()"></th>
+        <th><input form="filters" name="f_participant" class="input" value="{{ request.GET.f_participant }}"
+                   placeholder="назв./ИНН" onchange="this.form.submit()"></th>
+        <th><input form="filters" name="f_kit" class="input" value="{{ request.GET.f_kit }}"
+                   placeholder="фильтр…" onchange="this.form.submit()"></th>
+        <th><input form="filters" name="f_request_date" type="date" class="input"
+                   value="{{ request.GET.f_request_date }}" onchange="this.form.submit()"></th>
+        <th><input form="filters" name="f_forecast_date" type="date" class="input"
+                   value="{{ request.GET.f_forecast_date }}" onchange="this.form.submit()"></th>
+        <th><input form="filters" name="f_number" class="input" value="{{ request.GET.f_number }}"
+                   inputmode="numeric" placeholder="№" onchange="this.form.submit()"></th>
+        <th>
+          <select form="filters" name="f_status" class="input" onchange="this.form.submit()">
+            <option value="">все</option>
+            {% for val, label in statuses %}
+              <option value="{{ val }}" {% if request.GET.f_status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </th>
+      </tr>
     </thead>
-    <tbody>
+    <tbody id="orders-tbody">
       {% for order in orders %}
         {% include "orders/_table_row.html" %}
       {% empty %}
-        <tr><td colspan="9" class="muted" style="text-align:center;padding:24px">Записей нет</td></tr>
+        <tr><td colspan="9" class="muted" style="text-align:center;padding:24px">
+          {% if has_filters %}Ничего не найдено по заданным фильтрам{% else %}Записей нет{% endif %}
+        </td></tr>
       {% endfor %}
     </tbody>
   </table>

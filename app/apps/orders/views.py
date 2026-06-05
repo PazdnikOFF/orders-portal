@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_http_methods
 
 from . import matrix
@@ -40,24 +41,37 @@ def _order_form_initial(order: Order) -> dict:
 
 
 def _filtered_orders(request):
+    """Per-column filtering — each table column has its own filter input."""
     qs = visible_orders(request.user)
-    q = (request.GET.get("q") or "").strip()
-    if q:
-        qs = qs.filter(
-            Q(order_number__icontains=q.lstrip("ORD-").lstrip("0") or q)
-            | Q(manager__last_name__icontains=q)
-            | Q(manager__first_name__icontains=q)
-            | Q(distributor__name__icontains=q)
-            | Q(potential_user__name__icontains=q)
-            | Q(kit__icontains=q)
-        )
-    status = request.GET.get("status")
-    if status in Status.values:
-        qs = qs.filter(status=status)
+    g = request.GET
+    needs_distinct = False
 
-    sort = request.GET.get("sort", "number")
+    if v := g.get("f_manager", "").strip():
+        qs = qs.filter(Q(manager__last_name__icontains=v) | Q(manager__first_name__icontains=v))
+    if v := g.get("f_distributor", "").strip():
+        qs = qs.filter(Q(distributor__name__icontains=v) | Q(distributor__inn__icontains=v))
+    if v := g.get("f_potential", "").strip():
+        qs = qs.filter(Q(potential_user__name__icontains=v) | Q(potential_user__inn__icontains=v))
+    if v := g.get("f_participant", "").strip():
+        qs = qs.filter(Q(participants__name__icontains=v) | Q(participants__inn__icontains=v))
+        needs_distinct = True
+    if v := g.get("f_kit", "").strip():
+        qs = qs.filter(kit__icontains=v)
+    if v := parse_date(g.get("f_request_date", "")):
+        qs = qs.filter(request_date=v)
+    if v := parse_date(g.get("f_forecast_date", "")):
+        qs = qs.filter(forecast_date=v)
+    if v := "".join(ch for ch in g.get("f_number", "") if ch.isdigit()):
+        qs = qs.filter(order_number=int(v))
+    if (v := g.get("f_status", "")) in Status.values:
+        qs = qs.filter(status=v)
+
+    if needs_distinct:
+        qs = qs.distinct()
+
+    sort = g.get("sort", "number")
     field = SORT_FIELDS.get(sort, "order_number")
-    direction = "-" if request.GET.get("dir", "desc") == "desc" else ""
+    direction = "-" if g.get("dir", "desc") == "desc" else ""
     return qs.order_by(f"{direction}{field}")
 
 
@@ -67,11 +81,12 @@ def _filtered_orders(request):
 @login_required
 def table(request):
     orders = _filtered_orders(request)
+    filter_keys = ["f_manager", "f_distributor", "f_potential", "f_participant",
+                   "f_kit", "f_request_date", "f_forecast_date", "f_number", "f_status"]
     context = {
         "orders": orders,
         "statuses": Status.choices,
-        "q": request.GET.get("q", ""),
-        "status_filter": request.GET.get("status", ""),
+        "has_filters": any(request.GET.get(k) for k in filter_keys),
         "view": "table",
     }
     return render(request, "orders/table.html", context)
