@@ -1,0 +1,5 @@
+{% if org %}
+  <span class="lookup-result">✓ {{ org.display_name }}</span>
+{% elif error %}
+  <span class="lookup-result err">✗ {{ error }}</span>
+{% endif %}

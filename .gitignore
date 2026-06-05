@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Django
+*.log
+/app/staticfiles/
+db.sqlite3
+
+# Secrets & runtime data
+.env
+/data/
+/deploy/rclone/rclone.conf
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

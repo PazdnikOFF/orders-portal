@@ -1,0 +1,25 @@
+# --- Core ---
+Django==5.2.6
+djangorestframework==3.16.1
+django-environ==0.12.0
+
+# --- Database ---
+psycopg[binary]==3.2.9
+
+# --- Cache / sessions / broker ---
+redis==5.2.1
+django-redis==5.4.0
+
+# --- Background tasks (backups, cleanup, rclone sync, INN lookups) ---
+celery==5.5.3
+django-celery-beat==2.8.1
+
+# --- Security ---
+argon2-cffi==23.1.0
+
+# --- HTTP client for org-data provider (DaData / Rusprofile) ---
+requests==2.32.3
+
+# --- Serving ---
+gunicorn==23.0.0
+whitenoise==6.9.0

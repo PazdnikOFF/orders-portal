@@ -1,0 +1,31 @@
+<tr id="order-row-{{ order.pk }}" class="order-row"
+    hx-get="{% url 'orders:card' order.pk %}" hx-target="#card-block" hx-swap="innerHTML"
+    onclick="document.querySelectorAll('.order-row').forEach(function(r){r.classList.remove('selected')});this.classList.add('selected');">
+  <td>{{ order.manager.short_name }}</td>
+  <td class="org-list">{{ order.distributor.display_name }}</td>
+  <td class="org-list">{{ order.potential_user.display_name }}</td>
+  <td class="org-list">{% for p in order.participants.all %}{{ p.display_name }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+  <td>{{ order.kit }}</td>
+  <td>{{ order.request_date|date:"d.m.Y" }}</td>
+  <td>{{ order.forecast_date|date:"d.m.Y" }}</td>
+  <td>
+    <strong>{{ order.order_code }}</strong>
+    {% with f=order.active_file %}
+      {% if f %}<br><a class="file-link" href="{{ f.serve_url }}" target="_blank" onclick="event.stopPropagation()">📎 файл</a>{% endif %}
+    {% endwith %}
+  </td>
+  <td onclick="event.stopPropagation()">
+    {% if caps.is_admin or caps.is_operator and not order.is_locked %}
+      <select class="status-select {{ order.status }}" name="status"
+              hx-post="{% url 'orders:status' order.pk %}" hx-vals='{"render":"row"}'
+              hx-target="#order-row-{{ order.pk }}" hx-swap="outerHTML"
+              onclick="event.stopPropagation()">
+        {% for val, label in statuses %}
+          <option value="{{ val }}" {% if val == order.status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    {% else %}
+      <span class="status {{ order.status }}">{{ order.get_status_display }}</span>
+    {% endif %}
+  </td>
+</tr>

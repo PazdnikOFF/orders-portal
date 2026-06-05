@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Сотрудник{% endblock %}
+{% block content %}
+<div class="panel card-section" style="max-width:560px">
+  <h3>{% if mode == 'create' %}Новый сотрудник{% else %}Изменение сотрудника{% endif %}</h3>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {% if field.name == 'is_active' %}{{ field }}{% else %}{{ field }}{% endif %}
+        {% for e in field.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+      </div>
+    {% endfor %}
+    <div class="toolbar">
+      <button class="btn" type="submit">Сохранить</button>
+      <a class="btn secondary" href="{% url 'directories:employee_list' %}">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

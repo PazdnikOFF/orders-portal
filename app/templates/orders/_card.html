@@ -1,0 +1,130 @@
+<div class="panel card-section">
+  <h3>{{ order.order_code }} · <span class="status {{ order.status }}">{{ order.get_status_display }}</span></h3>
+
+  <form hx-post="{% url 'orders:update' order.pk %}" hx-target="#card-block" hx-swap="innerHTML">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <div class="card-grid">
+      <div>
+        {# Менеджер #}
+        <div class="field">
+          <label>{{ form.manager.label }}</label>
+          {{ form.manager }}
+          {% for e in form.manager.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        {# Дистрибьютор #}
+        <div class="field">
+          <label>{{ form.distributor_inn.label }}</label>
+          <div class="participant-row">
+            {{ form.distributor_inn }}
+            {% if not form.distributor_inn.field.disabled %}
+            <button type="button" class="btn secondary sm"
+              hx-post="{% url 'directories:org_lookup' %}"
+              hx-vals='js:{inn: document.getElementById("{{ form.distributor_inn.id_for_label }}").value, field:"distributor"}'
+              hx-target="#lk-distributor" hx-swap="innerHTML">Проверить</button>
+            {% endif %}
+          </div>
+          <div id="lk-distributor" class="lookup-result">✓ {{ order.distributor.display_name }}</div>
+          {% for e in form.distributor_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        {# Потенциальный пользователь #}
+        <div class="field">
+          <label>{{ form.potential_user_inn.label }}</label>
+          <div class="participant-row">
+            {{ form.potential_user_inn }}
+            {% if not form.potential_user_inn.field.disabled %}
+            <button type="button" class="btn secondary sm"
+              hx-post="{% url 'directories:org_lookup' %}"
+              hx-vals='js:{inn: document.getElementById("{{ form.potential_user_inn.id_for_label }}").value, field:"potential_user"}'
+              hx-target="#lk-potential" hx-swap="innerHTML">Проверить</button>
+            {% endif %}
+          </div>
+          <div id="lk-potential" class="lookup-result">✓ {{ order.potential_user.display_name }}</div>
+          {% for e in form.potential_user_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        {# Участники проекта (Комментарий) #}
+        <div class="field">
+          <label>Участники проекта (Комментарий)</label>
+          {% if form.participant_inns.field.disabled %}
+            <div class="org-list readonly-value">{% for p in order.participants.all %}{{ p.display_name }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</div>
+          {% else %}
+            <div x-data="participantsWidget({{ form.participant_inns.value|default:'[]'|safe }})">
+              <template x-for="(item, i) in items" :key="i">
+                <div class="participant-row">
+                  <input class="input" type="text" inputmode="numeric" placeholder="ИНН организации" x-model="items[i]">
+                  <button type="button" class="btn secondary sm" @click="remove(i)">✕</button>
+                </div>
+              </template>
+              <button type="button" class="btn ghost sm" @click="add()">+ организация</button>
+              <input type="hidden" name="participant_inns" :value="json">
+            </div>
+            <div class="hint">Текущие: {% for p in order.participants.all %}{{ p.display_name }}{% if not forloop.last %}; {% endif %}{% empty %}—{% endfor %}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div>
+        {# Комплект #}
+        <div class="field">
+          <label>{{ form.kit.label }}</label>
+          {{ form.kit }}
+          {% for e in form.kit.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        {# Дата обращения (системное, только чтение) #}
+        <div class="field">
+          <label>Дата обращения</label>
+          <div class="readonly-value">{{ order.request_date|date:"d.m.Y" }}</div>
+          <div class="hint">Заполняется системой, не редактируется.</div>
+        </div>
+
+        {# Прогнозируемая дата #}
+        <div class="field">
+          <label>{{ form.forecast_date.label }}</label>
+          {{ form.forecast_date }}
+          {% for e in form.forecast_date.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        {# Номер заказа (системное) #}
+        <div class="field">
+          <label>Номер заказа</label>
+          <div class="readonly-value"><strong>{{ order.order_code }}</strong></div>
+        </div>
+
+        {# Статус #}
+        <div class="field">
+          <label>{{ form.status.label }}</label>
+          {{ form.status }}
+          {% for e in form.status.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar" style="margin-top:8px">
+      {% if can_edit %}
+        <button type="submit" class="btn">Сохранить</button>
+      {% else %}
+        <span class="muted">Редактирование недоступно для вашей роли или текущей стадии.</span>
+      {% endif %}
+      <button type="button" class="btn secondary" hx-get="{% url 'orders:card' order.pk %}"
+              hx-target="#card-block" hx-swap="innerHTML">Отменить изменения</button>
+    </div>
+  </form>
+</div>
+
+{# Файл заказа — отдельная форма (multipart) #}
+<div class="panel card-section" id="card-file">
+  {% include "files/_card_file.html" with order=order active_file=active_file %}
+</div>
+
+{# История изменений #}
+<div class="panel card-section">
+  <h3>История изменений</h3>
+  {% include "orders/_history.html" with history=history order=order %}
+</div>

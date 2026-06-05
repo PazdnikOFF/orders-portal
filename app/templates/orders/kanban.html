@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Заказы — Kanban{% endblock %}
+{% block content %}
+
+<div class="toolbar">
+  <strong>Канбан-доска</strong>
+  <span class="muted">
+    {% if caps.change_status %}Перетаскивайте карточки между колонками для смены статуса.
+    {% else %}Режим просмотра (изменение статуса недоступно для вашей роли).{% endif %}
+  </span>
+  <div class="spacer"></div>
+  <a class="btn secondary" href="{% url 'orders:table' %}">К таблице</a>
+</div>
+
+<div class="kanban">
+  {% for col in columns %}
+    <div class="column {% if col.status == 'produced' or col.status == 'cancelled' %}terminal{% endif %}" data-status="{{ col.status }}">
+      <h4>{{ col.label }} <span class="muted">{{ col.orders|length }}</span></h4>
+      <div class="cards">
+        {% for order in col.orders %}
+          <div class="kcard" data-order-id="{{ order.pk }}" data-status="{{ order.status }}">
+            <div class="num">{{ order.order_code }}
+              {% if order.active_file %}<a href="{{ order.active_file.serve_url }}" target="_blank" title="файл">📎</a>{% endif %}
+            </div>
+            <div class="meta">Менеджер: {{ order.manager.short_name }}</div>
+            <div class="meta">Дистр.: {{ order.distributor.name }}</div>
+            <div class="meta">Польз.: {{ order.potential_user.name }}</div>
+            <div class="meta">Реализация: {{ order.forecast_date|date:"d.m.Y" }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

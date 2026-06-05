@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Журнал действий{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <strong>Журнал действий пользователей</strong>
+  <form method="get" class="toolbar" style="margin:0">
+    <select class="input" name="action" onchange="this.form.submit()" style="max-width:260px">
+      <option value="">Все действия</option>
+      {% for val, label in action_types %}
+        <option value="{{ val }}" {% if selected == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
+<div class="panel" style="overflow:auto">
+  <table class="grid">
+    <thead>
+      <tr><th>Время (UTC)</th><th>Пользователь</th><th>Действие</th><th>Описание</th><th>IP</th></tr>
+    </thead>
+    <tbody>
+      {% for a in page %}
+        <tr>
+          <td>{{ a.created_at|date:"d.m.Y H:i:s" }}</td>
+          <td>{{ a.user.display_name|default:"—" }}</td>
+          <td>{{ a.get_action_type_display }}</td>
+          <td>{{ a.summary }}</td>
+          <td class="muted">{{ a.ip_address|default:"—" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="muted" style="text-align:center;padding:20px">Записей нет</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page.has_other_pages %}
+<div class="toolbar" style="margin-top:12px;justify-content:center">
+  {% if page.has_previous %}<a class="btn secondary sm" href="?page={{ page.previous_page_number }}{% if selected %}&action={{ selected }}{% endif %}">← Назад</a>{% endif %}
+  <span class="muted">Стр. {{ page.number }} из {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a class="btn secondary sm" href="?page={{ page.next_page_number }}{% if selected %}&action={{ selected }}{% endif %}">Вперёд →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

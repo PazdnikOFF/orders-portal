@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Вход — Портал заказов{% endblock %}
+{% block content %}
+<div class="panel login-wrap">
+  <h1>Вход в портал</h1>
+  <form method="post" action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+    <div class="field">
+      <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+      {{ form.username }}
+    </div>
+    <div class="field">
+      <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+      {{ form.password }}
+    </div>
+    <button type="submit" class="btn" style="width:100%;justify-content:center">Войти</button>
+  </form>
+</div>
+{% endblock %}

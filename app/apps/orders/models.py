@@ -1,0 +1,150 @@
+"""Order model, gapless numbering, and change history (TЗ §10/§15, amendments §9/§10)."""
+from django.conf import settings
+from django.db import models, transaction
+from django.utils import timezone
+
+from . import matrix
+
+
+class Status(models.TextChoices):
+    PLANNED = "planned", "В плане"
+    IN_PROGRESS = "in_progress", "В работе"
+    PRODUCED = "produced", "Произведен"
+    CANCELLED = "cancelled", "Отмена"
+
+
+# status value -> matrix stage key
+STATUS_TO_STAGE = {
+    Status.PLANNED: matrix.STAGE_PLANNED,
+    Status.IN_PROGRESS: matrix.STAGE_IN_PROGRESS,
+    Status.PRODUCED: matrix.STAGE_PRODUCED,
+    Status.CANCELLED: matrix.STAGE_CANCELLED,
+}
+
+# Kanban columns (amendment §4) and which targets are reachable from each status.
+KANBAN_STATUSES = [Status.PLANNED, Status.IN_PROGRESS, Status.PRODUCED, Status.CANCELLED]
+
+
+class OrderSequence(models.Model):
+    """
+    Gapless order-number allocator (amendment §9: «пропуск номеров запрещён»).
+
+    A plain PostgreSQL sequence guarantees uniqueness but NOT gaplessness (it
+    advances on rollback). We instead increment a row under SELECT ... FOR
+    UPDATE inside the same transaction as order creation, so a rollback also
+    rolls back the number — strictly sequential, no gaps, no reuse.
+    """
+
+    name = models.CharField(max_length=50, unique=True, default="order_number")
+    value = models.BigIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Счётчик номеров"
+        verbose_name_plural = "Счётчики номеров"
+
+    @classmethod
+    def next_value(cls, name: str = "order_number") -> int:
+        seq = cls.objects.select_for_update().filter(name=name).first()
+        if seq is None:
+            seq = cls.objects.create(name=name, value=0)
+            seq = cls.objects.select_for_update().get(pk=seq.pk)
+        seq.value += 1
+        seq.save(update_fields=["value"])
+        return seq.value
+
+
+class Order(models.Model):
+    manager = models.ForeignKey(
+        "directories.Employee", on_delete=models.PROTECT,
+        related_name="managed_orders", verbose_name="Менеджер",
+    )
+    distributor = models.ForeignKey(
+        "directories.Organization", on_delete=models.PROTECT,
+        related_name="distributor_orders", verbose_name="Дистрибьютор",
+    )
+    potential_user = models.ForeignKey(
+        "directories.Organization", on_delete=models.PROTECT,
+        related_name="potential_user_orders", verbose_name="Потенциальный пользователь",
+    )
+    # «Комментарий / Участники проекта» — dynamic list of organizations (amendment §7).
+    participants = models.ManyToManyField(
+        "directories.Organization", blank=True,
+        related_name="participant_orders", verbose_name="Участники проекта",
+    )
+    kit = models.CharField("Комплект", max_length=500)
+    request_date = models.DateField("Дата обращения", default=timezone.localdate, editable=False)
+    forecast_date = models.DateField("Прогнозируемая дата реализации")
+    order_number = models.PositiveIntegerField("Номер заказа", unique=True, editable=False)
+    status = models.CharField(
+        "Статус", max_length=16, choices=Status.choices, default=Status.PLANNED, db_index=True,
+    )
+
+    created_at = models.DateTimeField("Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField("Дата изменения", auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL,
+        related_name="created_orders", verbose_name="Создал",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL,
+        related_name="updated_orders", verbose_name="Изменил",
+    )
+
+    class Meta:
+        verbose_name = "Заказ"
+        verbose_name_plural = "Заказы"
+        ordering = ["-order_number"]
+
+    def __str__(self):
+        return f"Заказ №{self.order_number}"
+
+    @property
+    def stage(self) -> str:
+        return STATUS_TO_STAGE.get(self.status, matrix.STAGE_PLANNED)
+
+    @property
+    def is_locked(self) -> bool:
+        """Produced/Cancelled lock all fields for non-admins (TЗ §12.9)."""
+        return self.status in (Status.PRODUCED, Status.CANCELLED)
+
+    @property
+    def order_code(self) -> str:
+        """Human/file-name form of the order number, e.g. ORD-000001."""
+        return f"ORD-{self.order_number:06d}"
+
+    @property
+    def active_file(self):
+        """The currently attached (non-detached) order file, if any."""
+        return self.files.filter(is_detached=False).order_by("-uploaded_at").first()
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and not self.order_number:
+            with transaction.atomic():
+                self.order_number = OrderSequence.next_value()
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
+
+class OrderHistory(models.Model):
+    """Per-field change history (amendment §10 — кто/когда/поле/старое/новое)."""
+
+    order = models.ForeignKey(
+        Order, on_delete=models.CASCADE, related_name="history", verbose_name="Заказ"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, verbose_name="Кто изменил"
+    )
+    changed_at = models.DateTimeField("Когда", auto_now_add=True, db_index=True)
+    field = models.CharField("Поле", max_length=64)
+    field_label = models.CharField("Название поля", max_length=128, blank=True)
+    old_value = models.TextField("Старое значение", blank=True)
+    new_value = models.TextField("Новое значение", blank=True)
+
+    class Meta:
+        verbose_name = "Изменение заказа"
+        verbose_name_plural = "История изменений"
+        ordering = ["-changed_at"]
+
+    def __str__(self):
+        return f"{self.order} · {self.field}"

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Заказы — таблица{% endblock %}
+{% block content %}
+
+<div class="toolbar">
+  <form method="get" class="toolbar" style="margin:0;flex:1">
+    <input class="input" type="search" name="q" value="{{ q }}" placeholder="Поиск: номер, менеджер, организация, комплект"
+           style="max-width:340px">
+    <select class="input" name="status" style="max-width:170px" onchange="this.form.submit()">
+      <option value="">Все статусы</option>
+      {% for val, label in statuses %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn secondary" type="submit">Найти</button>
+  </form>
+  <div class="spacer"></div>
+  {% if caps.create_orders %}
+    <button class="btn" hx-get="{% url 'orders:new' %}" hx-target="#card-block" hx-swap="innerHTML"
+            onclick="document.getElementById('card-wrap').setAttribute('data-open','1')">
+      + Добавить заказ
+    </button>
+  {% endif %}
+</div>
+
+<div class="panel" style="overflow:auto">
+  <table class="grid">
+    <thead>
+      <tr>
+        <th>Менеджер</th>
+        <th>Дистрибьютор</th>
+        <th>Потенциальный пользователь</th>
+        <th>Участники проекта</th>
+        <th>Комплект</th>
+        <th>Дата обращения</th>
+        <th>Прогноз. дата</th>
+        <th>Номер заказа</th>
+        <th>Статус</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+        {% include "orders/_table_row.html" %}
+      {% empty %}
+        <tr><td colspan="9" class="muted" style="text-align:center;padding:24px">Записей нет</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Bottom block / card (TЗ §9) — collapsible, hidden until a row is chosen -->
+<div class="card-block" id="card-wrap" x-data="{open:true}">
+  <div class="toolbar">
+    <strong>Карточка записи</strong>
+    <button class="btn ghost sm" @click="open=!open" x-text="open ? 'Свернуть ▲' : 'Развернуть ▼'"></button>
+  </div>
+  <div id="card-block" x-show="open" x-transition>
+    <div class="panel card-section muted">Выберите строку в таблице для просмотра карточки.</div>
+  </div>
+</div>
+{% endblock %}

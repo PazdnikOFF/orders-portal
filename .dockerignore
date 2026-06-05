@@ -1,0 +1,13 @@
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.pyc
+.env
+data/
+app/staticfiles/
+docs/
+*.md
+.DS_Store
+deploy/rclone/rclone.conf

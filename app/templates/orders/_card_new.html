@@ -1,0 +1,97 @@
+<div class="panel card-section">
+  <h3>Новый заказ</h3>
+  <form hx-post="{% url 'orders:new' %}" hx-target="#card-block" hx-swap="innerHTML">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <div class="card-grid">
+      <div>
+        <div class="field">
+          <label>{{ form.manager.label }} *</label>
+          {{ form.manager }}
+          {% for e in form.manager.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        <div class="field">
+          <label>{{ form.distributor_inn.label }} *</label>
+          <div class="participant-row">
+            {{ form.distributor_inn }}
+            <button type="button" class="btn secondary sm"
+              hx-post="{% url 'directories:org_lookup' %}"
+              hx-vals='js:{inn: document.getElementById("{{ form.distributor_inn.id_for_label }}").value, field:"distributor"}'
+              hx-target="#lk-new-distributor" hx-swap="innerHTML">Проверить</button>
+          </div>
+          <div id="lk-new-distributor" class="lookup-result"></div>
+          {% for e in form.distributor_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        <div class="field">
+          <label>{{ form.potential_user_inn.label }} *</label>
+          <div class="participant-row">
+            {{ form.potential_user_inn }}
+            <button type="button" class="btn secondary sm"
+              hx-post="{% url 'directories:org_lookup' %}"
+              hx-vals='js:{inn: document.getElementById("{{ form.potential_user_inn.id_for_label }}").value, field:"potential_user"}'
+              hx-target="#lk-new-potential" hx-swap="innerHTML">Проверить</button>
+          </div>
+          <div id="lk-new-potential" class="lookup-result"></div>
+          {% for e in form.potential_user_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        <div class="field">
+          <label>Участники проекта (Комментарий) *</label>
+          <div x-data="participantsWidget([])">
+            <template x-for="(item, i) in items" :key="i">
+              <div class="participant-row">
+                <input class="input" type="text" inputmode="numeric" placeholder="ИНН организации" x-model="items[i]">
+                <button type="button" class="btn secondary sm" @click="remove(i)">✕</button>
+              </div>
+            </template>
+            <button type="button" class="btn ghost sm" @click="add()">+ организация</button>
+            <input type="hidden" name="participant_inns" :value="json">
+          </div>
+          {% for e in form.participant_inns.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <div class="field">
+          <label>{{ form.kit.label }} *</label>
+          {{ form.kit }}
+          {% for e in form.kit.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        <div class="field">
+          <label>Дата обращения</label>
+          <div class="readonly-value muted">Будет установлена системой</div>
+        </div>
+
+        <div class="field">
+          <label>{{ form.forecast_date.label }} *</label>
+          {{ form.forecast_date }}
+          {% for e in form.forecast_date.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        <div class="field">
+          <label>Номер заказа</label>
+          <div class="readonly-value muted">Будет присвоен системой</div>
+        </div>
+
+        <div class="field">
+          <label>{{ form.status.label }}</label>
+          {{ form.status }}
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar" style="margin-top:8px">
+      <button type="submit" class="btn">Создать заказ</button>
+      <button type="button" class="btn secondary"
+              onclick="document.getElementById('card-block').innerHTML='<div class=&quot;panel card-section muted&quot;>Выберите строку в таблице для просмотра карточки.</div>';">
+        Отмена
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Пользователи{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <strong>Пользователи</strong>
+  <div class="spacer"></div>
+  <a class="btn" href="{% url 'accounts:user_create' %}">+ Добавить пользователя</a>
+</div>
+
+<div class="panel" style="overflow:auto">
+  <table class="grid">
+    <thead>
+      <tr><th>Логин</th><th>ФИО</th><th>Роль</th><th>Сотрудник</th><th>Статус</th><th>Последний вход</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+        <tr>
+          <td>{{ u.username }}</td>
+          <td>{{ u.full_name|default:"—" }}</td>
+          <td>{{ u.get_role_display }}</td>
+          <td>{{ u.employee.short_name|default:"—" }}</td>
+          <td>{% if u.is_active %}<span class="status produced">активен</span>{% else %}<span class="status cancelled">заблокирован</span>{% endif %}</td>
+          <td>{{ u.last_login|date:"d.m.Y H:i"|default:"—" }}</td>
+          <td class="row-actions">
+            <a class="btn ghost sm" href="{% url 'accounts:user_edit' u.pk %}">Изменить</a>
+            {% if u != request.user %}
+              <form method="post" action="{% url 'accounts:user_toggle_block' u.pk %}" style="display:inline">
+                {% csrf_token %}
+                <button class="btn {% if u.is_active %}danger{% else %}secondary{% endif %} sm" type="submit">
+                  {% if u.is_active %}Заблокировать{% else %}Разблокировать{% endif %}
+                </button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

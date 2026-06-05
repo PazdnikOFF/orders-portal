@@ -1,0 +1,98 @@
+# Order Tracking Portal — isolated stack.
+# Coexists with Bitrix24 on the same CentOS host:
+#  * own PostgreSQL/Redis containers (Bitrix's services are untouched);
+#  * only nginx publishes a host port (HTTP_PORT, default 8080 — NOT 80/443);
+#  * data lives in named volumes that survive image rebuilds.
+
+name: orders-portal
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-portal}
+      POSTGRES_USER: ${POSTGRES_USER:-portal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-portal}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-portal}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    networks: [internal]
+
+  web:
+    build: .
+    image: orders-portal:latest
+    command: ["web"]
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
+    volumes:
+      - order_files:/data/orders
+      - backups:/data/backups
+      - staticfiles:/app/staticfiles
+    networks: [internal]
+
+  worker:
+    build: .
+    image: orders-portal:latest
+    command: ["worker"]
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
+    volumes:
+      - order_files:/data/orders
+      - backups:/data/backups
+      # rclone config (Google Drive token) — mount read-only when enabled.
+      - ${RCLONE_CONFIG_DIR:-./deploy/rclone}:/home/app/.config/rclone:ro
+    networks: [internal]
+
+  beat:
+    build: .
+    image: orders-portal:latest
+    command: ["beat"]
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
+    networks: [internal]
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on: [web]
+    ports:
+      # Host port -> container 80. Change HTTP_PORT to avoid clashing with Bitrix.
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - staticfiles:/app/staticfiles:ro
+      - order_files:/data/orders:ro
+    networks: [internal]
+
+volumes:
+  pgdata:
+  redisdata:
+  order_files:
+  backups:
+  staticfiles:
+
+networks:
+  internal:
+    driver: bridge

@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Портал учёта заказов{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'vendor/htmx.min.js' %}"></script>
+  <script defer src="{% static 'vendor/alpine.min.js' %}"></script>
+  <script defer src="{% static 'vendor/sortable.min.js' %}"></script>
+</head>
+<body
+  data-idle-timeout="{{ idle_timeout_seconds }}"
+  data-login-url="{% url 'accounts:login' %}"
+  {% if user.is_authenticated %}data-authenticated="1"{% endif %}
+  data-can-change-status="{% if caps.change_status %}1{% else %}0{% endif %}">
+
+  {% if user.is_authenticated %}
+  <header class="topbar">
+    <span class="brand">Заказы</span>
+    <nav>
+      <a href="{% url 'orders:table' %}" class="{% if request.resolver_match.url_name == 'table' %}active{% endif %}">Таблица</a>
+      <a href="{% url 'orders:kanban' %}" class="{% if request.resolver_match.url_name == 'kanban' %}active{% endif %}">Kanban</a>
+      <a href="{% url 'directories:employee_list' %}">Сотрудники</a>
+      {% if caps.manage_users %}
+        <a href="{% url 'accounts:user_list' %}">Пользователи</a>
+        <a href="{% url 'audit:log' %}">Журнал</a>
+      {% endif %}
+      {% if caps.access_backups %}
+        <a href="{% url 'backups:list' %}">Резервные копии</a>
+      {% endif %}
+    </nav>
+    <div class="user">
+      <span>{{ user.display_name }}</span>
+      <span class="role-badge">{{ caps.role_label }}</span>
+      <a href="{% url 'accounts:logout' %}" style="color:#fca5a5">Выход</a>
+    </div>
+  </header>
+  {% endif %}
+
+  <main class="container">
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{% static 'js/app.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

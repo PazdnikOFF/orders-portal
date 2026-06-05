@@ -1,0 +1,22 @@
+{% if history %}
+  <div class="history">
+    <table>
+      <thead>
+        <tr><th>Когда (UTC)</th><th>Кто</th><th>Поле</th><th>Было</th><th>Стало</th></tr>
+      </thead>
+      <tbody>
+        {% for h in history %}
+          <tr>
+            <td>{{ h.changed_at|date:"d.m.Y H:i" }}</td>
+            <td>{{ h.user.display_name|default:"—" }}</td>
+            <td>{{ h.field_label|default:h.field }}</td>
+            <td class="muted">{{ h.old_value|default:"—" }}</td>
+            <td>{{ h.new_value|default:"—" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="muted">Изменений пока нет.</p>
+{% endif %}
