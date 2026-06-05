@@ -30,6 +30,12 @@
   document.body.addEventListener("htmx:afterRequest", resetIdle);
   resetIdle();
 
+  // --- Close any open org-combobox dropdown when clicking elsewhere ----------
+  document.addEventListener("click", function (e) {
+    if (e.target.closest && (e.target.closest(".org-options") || e.target.closest(".org-search"))) return;
+    document.querySelectorAll(".org-options").forEach(function (o) { o.innerHTML = ""; });
+  });
+
   // --- Kanban drag & drop --------------------------------------------------
   window.initKanban = function () {
     if (typeof Sortable === "undefined") return;
@@ -75,20 +81,51 @@
 /* Dynamic participant-INN rows. Plain JS so it works inside HTMX-swapped
    cards (no framework init needed). Each row is an <input name="participant_inns">;
    the server collects them via request.POST.getlist(). */
+/* Organization combobox: type INN -> dropdown of matches (with КПП) -> pick. */
+function selectOrgOption(btn) {
+  var combo = btn.closest("[data-org-combo]");
+  if (!combo) return;
+  var id = combo.querySelector(".org-id");
+  var search = combo.querySelector(".org-search");
+  var opts = combo.querySelector(".org-options");
+  if (id) id.value = btn.dataset.orgId || "";
+  if (search) search.value = btn.dataset.display || "";   // «Наименование (ИНН)»
+  if (opts) opts.innerHTML = "";
+}
+
+function orgComboInvalidate(input) {
+  // The typed text no longer matches a confirmed selection.
+  var combo = input.closest("[data-org-combo]");
+  var id = combo ? combo.querySelector(".org-id") : null;
+  if (id) id.value = "";
+}
+
+function orgComboKeydown(e) {
+  if (e.key !== "Enter") return;
+  var combo = e.target.closest("[data-org-combo]");
+  var first = combo ? combo.querySelector(".org-options .org-option") : null;
+  if (first) { e.preventDefault(); selectOrgOption(first); }  // confirm first match
+}
+
+function _clearCombo(scope) {
+  var id = scope.querySelector(".org-id"); if (id) id.value = "";
+  var search = scope.querySelector(".org-search"); if (search) search.value = "";
+  var opts = scope.querySelector(".org-options"); if (opts) opts.innerHTML = "";
+}
+
+/* Dynamic participant rows — each row is its own org combobox. */
 function addParticipantRow(btn) {
   var wrap = btn.closest("[data-participants]");
   if (!wrap) return;
   var rows = wrap.querySelector(".participant-rows");
   var last = rows.querySelector(".participant-row:last-child");
   if (!last) return;
-  var row = last.cloneNode(true);          // keeps the hx-* lookup attributes
-  var input = row.querySelector("input");
-  if (input) input.value = "";
-  var lk = row.querySelector(".lk");
-  if (lk) lk.innerHTML = "";
+  var row = last.cloneNode(true);          // keeps the hx-* combobox attributes
+  _clearCombo(row);
   rows.appendChild(row);
-  if (window.htmx) htmx.process(row);      // activate auto-lookup on the new row
-  if (input) input.focus();
+  if (window.htmx) htmx.process(row);      // activate the search input on the new row
+  var search = row.querySelector(".org-search");
+  if (search) search.focus();
 }
 
 function removeParticipantRow(btn) {
@@ -97,10 +134,7 @@ function removeParticipantRow(btn) {
   var row = btn.closest(".participant-row");
   if (!rows || !row) return;
   if (rows.querySelectorAll(".participant-row").length <= 1) {
-    var input = row.querySelector("input");
-    if (input) input.value = "";           // keep at least one (empty) row
-    var lk = row.querySelector(".lk");
-    if (lk) lk.innerHTML = "";
+    _clearCombo(row);                       // keep at least one (empty) row
   } else {
     row.remove();
   }

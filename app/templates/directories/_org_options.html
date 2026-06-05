@@ -1,0 +1,13 @@
+{% if orgs %}
+  {% for org in orgs %}
+    <button type="button" class="org-option" data-org-id="{{ org.pk }}"
+            data-display="{{ org.display_name }}" onclick="selectOrgOption(this)">
+      <span class="oo-name">{{ org.name|default:org.full_name }}</span>
+      <span class="muted">ИНН {{ org.inn }}{% if org.kpp %} · КПП {{ org.kpp }}{% endif %}</span>
+    </button>
+  {% endfor %}
+{% elif error %}
+  <div class="org-option-msg err">✗ {{ error }}</div>
+{% else %}
+  <div class="org-option-msg muted">Ничего не найдено</div>
+{% endif %}

@@ -15,23 +15,21 @@
         </div>
 
         <div class="field">
-          <label>{{ form.distributor_inn.label }} *</label>
-          {{ form.distributor_inn }}
-          <div id="lk-distributor" class="lookup-result"></div>
-          {% for e in form.distributor_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+          <label>{{ form.distributor_org.label }} *</label>
+          {% include "orders/_org_combo.html" with name="distributor_org" value_org=None %}
+          {% for e in form.distributor_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
         <div class="field">
-          <label>{{ form.potential_user_inn.label }} *</label>
-          {{ form.potential_user_inn }}
-          <div id="lk-potential" class="lookup-result"></div>
-          {% for e in form.potential_user_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+          <label>{{ form.potential_user_org.label }} *</label>
+          {% include "orders/_org_combo.html" with name="potential_user_org" value_org=None %}
+          {% for e in form.potential_user_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
         <div class="field">
           <label>Участники проекта (Комментарий) *</label>
           {% include "orders/_participants.html" with participant_values=participant_values %}
-          {% for e in form.participant_inns.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+          {% for e in form.participant_orgs.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
       </div>
 

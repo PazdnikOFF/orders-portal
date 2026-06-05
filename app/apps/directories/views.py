@@ -9,33 +9,25 @@ from apps.integrations.providers import OrgLookupError
 
 from .forms import EmployeeForm
 from .models import Employee
-from .services import upsert_organization
+from .services import suggest_orgs
 
 
 # --------------------------------------------------------------------------- #
-# Organization lookup by INN — used by the order card (HTMX) (TЗ §14)
+# Organization suggest by INN — combobox dropdown (HTMX) (TЗ §14)
 # --------------------------------------------------------------------------- #
 @login_required
 @require_http_methods(["POST"])
-def org_lookup(request):
+def org_suggest(request):
     """
-    Resolve an INN to an organization: fetch via provider, upsert locally,
-    and return a fragment with the resolved name + hidden org id, so the card
-    can attach the FK. `field` echoes which form field triggered the lookup.
+    Resolve an INN to a list of organizations (head office + branches, each with
+    its КПП), upsert them locally and return a dropdown the user picks from.
     """
     inn = (request.POST.get("inn") or "").strip()
-    field = request.POST.get("field", "org")
     try:
-        org = upsert_organization(inn)
+        orgs = suggest_orgs(inn)
     except OrgLookupError as exc:
-        return render(
-            request, "directories/_org_lookup_result.html",
-            {"error": str(exc), "field": field}, status=200,
-        )
-    return render(
-        request, "directories/_org_lookup_result.html",
-        {"org": org, "field": field},
-    )
+        return render(request, "directories/_org_options.html", {"error": str(exc)})
+    return render(request, "directories/_org_options.html", {"orgs": orgs})
 
 
 # --------------------------------------------------------------------------- #

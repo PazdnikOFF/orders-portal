@@ -16,31 +16,28 @@
           {% for e in form.manager.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
-        {# Дистрибьютор — поиск по ИНН запускается автоматически #}
+        {# Дистрибьютор — ввод ИНН, выбор из выпадающего списка #}
         <div class="field">
-          <label>{{ form.distributor_inn.label }}</label>
-          {{ form.distributor_inn }}
-          <div id="lk-distributor" class="lookup-result">✓ {{ order.distributor.display_name }}</div>
-          {% for e in form.distributor_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+          <label>{{ form.distributor_org.label }}</label>
+          {% include "orders/_org_combo.html" with name="distributor_org" value_org=order.distributor disabled=form.distributor_org.field.disabled %}
+          {% for e in form.distributor_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
-        {# Потенциальный пользователь — поиск по ИНН запускается автоматически #}
+        {# Потенциальный пользователь #}
         <div class="field">
-          <label>{{ form.potential_user_inn.label }}</label>
-          {{ form.potential_user_inn }}
-          <div id="lk-potential" class="lookup-result">✓ {{ order.potential_user.display_name }}</div>
-          {% for e in form.potential_user_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+          <label>{{ form.potential_user_org.label }}</label>
+          {% include "orders/_org_combo.html" with name="potential_user_org" value_org=order.potential_user disabled=form.potential_user_org.field.disabled %}
+          {% for e in form.potential_user_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
-        {# Участники проекта (Комментарий) — динамический список ИНН #}
+        {# Участники проекта (Комментарий) — динамический список организаций #}
         <div class="field">
           <label>Участники проекта (Комментарий)</label>
-          {% if form.participant_inns.field.disabled %}
+          {% if form.participant_orgs.field.disabled %}
             <div class="org-list readonly-value">{% for p in order.participants.all %}{{ p.display_name }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</div>
           {% else %}
             {% include "orders/_participants.html" with participant_values=participant_values %}
-            <div class="hint">Текущие: {% for p in order.participants.all %}{{ p.display_name }}{% if not forloop.last %}; {% endif %}{% empty %}—{% endfor %}</div>
-            {% for e in form.participant_inns.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+            {% for e in form.participant_orgs.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
           {% endif %}
         </div>
       </div>

@@ -47,7 +47,9 @@ class Organization(models.Model):
     «Наименование (ИНН)» (amendment §8).
     """
 
-    inn = models.CharField("ИНН", max_length=12, unique=True, db_index=True)
+    # An INN can have several КПП (head office + branches), so the natural key
+    # is (inn, kpp) — that lets the user pick a specific branch from DaData.
+    inn = models.CharField("ИНН", max_length=12, db_index=True)
     name = models.CharField("Наименование", max_length=500, blank=True)
     full_name = models.CharField("Полное наименование", max_length=1000, blank=True)
     kpp = models.CharField("КПП", max_length=9, blank=True)
@@ -61,11 +63,21 @@ class Organization(models.Model):
         verbose_name = "Организация"
         verbose_name_plural = "Организации"
         ordering = ["name", "inn"]
+        constraints = [
+            models.UniqueConstraint(fields=["inn", "kpp"], name="uniq_org_inn_kpp"),
+        ]
 
     def __str__(self):
         return self.display_name
 
     @property
     def display_name(self) -> str:
+        """Form/table display — «Наименование (ИНН)» (amendment §8)."""
         label = self.name or self.full_name or "Без наименования"
         return f"{label} ({self.inn})"
+
+    @property
+    def option_label(self) -> str:
+        """Dropdown label — name + КПП so branches are distinguishable."""
+        label = self.name or self.full_name or self.inn
+        return f"{label} · КПП {self.kpp}" if self.kpp else label

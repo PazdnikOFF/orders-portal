@@ -1,66 +1,15 @@
 """
-Order card form. Organization fields are entered as INN and resolved to
-Organization records on save (TЗ §12). Field availability is gated by the
-stage/role matrix — non-editable fields are rendered disabled.
+Order card form. Organization fields (distributor, potential user, participants)
+are comboboxes: the user types an INN, picks an organization from the dropdown,
+and the chosen Organization is submitted by id. Field availability is gated by
+the stage/role matrix — non-editable fields are rendered read-only.
 """
 from django import forms
-from django.urls import reverse_lazy
 
-from apps.directories.models import Employee, EmployeeType
+from apps.directories.models import Employee, EmployeeType, Organization
 
 from . import matrix
 from .models import Status
-
-# Fire the lookup automatically once a full INN (10 or 12 digits) is entered —
-# no button click. `event.target` is the input in both keyup and change filters.
-_INN_VALID_LEN = "event.target.value.length==10||event.target.value.length==12"
-
-
-def _inn_widget(input_id: str, field_key: str, target_id: str) -> forms.TextInput:
-    return forms.TextInput(attrs={
-        "class": "input inn-input",
-        "inputmode": "numeric",
-        "autocomplete": "off",
-        "hx-post": reverse_lazy("directories:org_lookup"),
-        "hx-trigger": f"keyup[{_INN_VALID_LEN}] changed delay:500ms, change[{_INN_VALID_LEN}]",
-        "hx-vals": f'js:{{inn: document.getElementById("{input_id}").value, field:"{field_key}"}}',
-        "hx-target": f"#{target_id}",
-        "hx-swap": "innerHTML",
-    })
-
-
-class INNListWidget(forms.Widget):
-    """
-    Collects an unbounded list of «participant_inns» inputs (one per row) into a
-    Python list. Rendered manually in the template (dynamic add/remove rows), so
-    render() returns nothing.
-    """
-
-    def value_from_datadict(self, data, files, name):
-        if hasattr(data, "getlist"):
-            return data.getlist(name)
-        return data.get(name)
-
-    def render(self, name, value, attrs=None, renderer=None):
-        return ""
-
-
-class INNListField(forms.Field):
-    """A variable-length list of organization INNs (the project participants)."""
-
-    widget = INNListWidget
-
-    def clean(self, value):
-        inns = []
-        for raw in value or []:
-            raw = (raw or "").strip()
-            if not raw:
-                continue
-            if not raw.isdigit() or len(raw) not in (10, 12):
-                raise forms.ValidationError("ИНН участника должен содержать 10 или 12 цифр.")
-            if raw not in inns:  # keep unique, preserve order
-                inns.append(raw)
-        return inns
 
 
 class OrderForm(forms.Form):
@@ -70,17 +19,18 @@ class OrderForm(forms.Form):
         widget=forms.Select(attrs={"class": "input"}),
         empty_label="— выберите менеджера —",
     )
-    distributor_inn = forms.CharField(
-        label="Дистрибьютор (ИНН)", max_length=12,
-        widget=_inn_widget("id_distributor_inn", "distributor", "lk-distributor"),
+    distributor_org = forms.ModelChoiceField(
+        label="Дистрибьютор", queryset=Organization.objects.all(),
+        widget=forms.HiddenInput(),
     )
-    potential_user_inn = forms.CharField(
-        label="Потенциальный пользователь (ИНН)", max_length=12,
-        widget=_inn_widget("id_potential_user_inn", "potential_user", "lk-potential"),
+    potential_user_org = forms.ModelChoiceField(
+        label="Потенциальный пользователь", queryset=Organization.objects.all(),
+        widget=forms.HiddenInput(),
     )
-    # Variable-length list of participant INNs — rendered as repeated inputs,
-    # collected via request.POST.getlist("participant_inns").
-    participant_inns = INNListField(label="Участники проекта", required=False)
+    participant_orgs = forms.ModelMultipleChoiceField(
+        label="Участники проекта", queryset=Organization.objects.all(),
+        required=False, widget=forms.MultipleHiddenInput(),
+    )
     kit = forms.CharField(
         label="Комплект", max_length=500, widget=forms.TextInput(attrs={"class": "input"})
     )
@@ -97,9 +47,9 @@ class OrderForm(forms.Form):
     # Map form fields to matrix field keys.
     FIELD_TO_MATRIX = {
         "manager": "manager",
-        "distributor_inn": "distributor",
-        "potential_user_inn": "potential_user",
-        "participant_inns": "participants",
+        "distributor_org": "distributor",
+        "potential_user_org": "potential_user",
+        "participant_orgs": "participants",
         "kit": "kit",
         "forecast_date": "forecast_date",
         "status": "status",
@@ -115,22 +65,9 @@ class OrderForm(forms.Form):
             if not matrix.can_edit_field(user, matrix_field, stage):
                 self.fields[form_field].disabled = True
 
-    def _clean_inn(self, value):
-        value = (value or "").strip()
-        if value and (not value.isdigit() or len(value) not in (10, 12)):
-            raise forms.ValidationError("ИНН должен содержать 10 или 12 цифр.")
-        return value
-
-    def clean_distributor_inn(self):
-        return self._clean_inn(self.cleaned_data.get("distributor_inn"))
-
-    def clean_potential_user_inn(self):
-        return self._clean_inn(self.cleaned_data.get("potential_user_inn"))
-
     def clean(self):
         cleaned = super().clean()
         # At creation all listed fields are mandatory (TЗ §13).
-        if self.is_create:
-            if not cleaned.get("participant_inns"):
-                self.add_error("participant_inns", "Добавьте хотя бы одну организацию-участника.")
+        if self.is_create and not cleaned.get("participant_orgs"):
+            self.add_error("participant_orgs", "Добавьте хотя бы одну организацию-участника.")
         return cleaned

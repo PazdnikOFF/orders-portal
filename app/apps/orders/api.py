@@ -7,6 +7,8 @@ from rest_framework.response import Response
 from django.core.exceptions import PermissionDenied, ValidationError
 
 from apps.directories.models import Employee, EmployeeType
+from apps.directories.services import upsert_organization
+from apps.integrations.providers import OrgLookupError
 
 from .models import Order, Status
 from .services import (
@@ -15,6 +17,15 @@ from .services import (
     update_order,
     visible_orders,
 )
+
+
+def _resolve_orgs(data: dict) -> dict:
+    """Translate INN-based API input into the org-instance form services expect."""
+    cleaned = dict(data)
+    cleaned["distributor_org"] = upsert_organization(data["distributor_inn"])
+    cleaned["potential_user_org"] = upsert_organization(data["potential_user_inn"])
+    cleaned["participant_orgs"] = [upsert_organization(i) for i in data.get("participant_inns", [])]
+    return cleaned
 
 
 class OrderReadSerializer(serializers.ModelSerializer):
@@ -74,9 +85,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = OrderWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            order = create_order(request, serializer.validated_data)
+            order = create_order(request, _resolve_orgs(serializer.validated_data))
         except PermissionDenied as exc:
             raise DRFPermissionDenied(str(exc))
+        except OrgLookupError as exc:
+            return Response({"detail": str(exc)}, status=422)
         return Response(OrderReadSerializer(order, context={"request": request}).data,
                         status=status.HTTP_201_CREATED)
 
@@ -85,9 +98,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = OrderWriteSerializer(data=request.data, partial=kwargs.get("partial", False))
         serializer.is_valid(raise_exception=True)
         try:
-            update_order(request, order, serializer.validated_data)
+            update_order(request, order, _resolve_orgs(serializer.validated_data))
         except PermissionDenied as exc:
             raise DRFPermissionDenied(str(exc))
+        except OrgLookupError as exc:
+            return Response({"detail": str(exc)}, status=422)
         except ValidationError as exc:
             return Response({"detail": exc.messages}, status=400)
         order.refresh_from_db()

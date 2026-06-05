@@ -1,33 +1,12 @@
-{# Dynamic participant-INN rows. Each input is named "participant_inns" (server
-   reads request.POST.getlist). Each row auto-looks-up the org by INN — same as
-   the distributor field — and shows the result just below the input. #}
 <div data-participants>
   <div class="participant-rows">
-    {% for inn in participant_values %}
+    {% for org in participant_values %}
       <div class="participant-row">
-        <div class="prow-line">
-          <input class="input" type="text" inputmode="numeric" name="participant_inns"
-                 value="{{ inn }}" placeholder="ИНН организации" autocomplete="off"
-                 hx-post="{% url 'directories:org_lookup' %}"
-                 hx-trigger="keyup[event.target.value.length==10||event.target.value.length==12] changed delay:500ms, change[event.target.value.length==10||event.target.value.length==12]"
-                 hx-vals='js:{inn: event.target.value, field:"participant"}'
-                 hx-target="next .lk" hx-swap="innerHTML">
-          <button type="button" class="btn secondary sm" onclick="removeParticipantRow(this)" title="Убрать">✕</button>
-        </div>
-        <div class="lk lookup-result"></div>
+        {% include "orders/_org_combo.html" with name="participant_orgs" value_org=org removable=True %}
       </div>
     {% empty %}
       <div class="participant-row">
-        <div class="prow-line">
-          <input class="input" type="text" inputmode="numeric" name="participant_inns"
-                 value="" placeholder="ИНН организации" autocomplete="off"
-                 hx-post="{% url 'directories:org_lookup' %}"
-                 hx-trigger="keyup[event.target.value.length==10||event.target.value.length==12] changed delay:500ms, change[event.target.value.length==10||event.target.value.length==12]"
-                 hx-vals='js:{inn: event.target.value, field:"participant"}'
-                 hx-target="next .lk" hx-swap="innerHTML">
-          <button type="button" class="btn secondary sm" onclick="removeParticipantRow(this)" title="Убрать">✕</button>
-        </div>
-        <div class="lk lookup-result"></div>
+        {% include "orders/_org_combo.html" with name="participant_orgs" value_org=None removable=True %}
       </div>
     {% endfor %}
   </div>

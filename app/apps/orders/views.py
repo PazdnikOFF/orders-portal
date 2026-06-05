@@ -7,6 +7,8 @@ from django.shortcuts import get_object_or_404, render
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_http_methods
 
+from apps.directories.models import Organization
+
 from . import matrix
 from .forms import OrderForm
 from .models import KANBAN_STATUSES, Order, Status
@@ -26,16 +28,16 @@ SORT_FIELDS = {
 }
 
 
-def _participant_inns(order: Order) -> list[str]:
-    return list(order.participants.values_list("inn", flat=True))
+def _participant_orgs(order: Order) -> list:
+    return list(order.participants.all())
 
 
 def _order_form_initial(order: Order) -> dict:
     return {
         "manager": order.manager_id,
-        "distributor_inn": order.distributor.inn,
-        "potential_user_inn": order.potential_user.inn,
-        "participant_inns": _participant_inns(order),
+        "distributor_org": order.distributor_id,
+        "potential_user_org": order.potential_user_id,
+        "participant_orgs": list(order.participants.values_list("pk", flat=True)),
         "kit": order.kit,
         "forecast_date": order.forecast_date,
         "status": order.status,
@@ -168,7 +170,7 @@ def _card_context(request, order, form):
         "can_edit": (request.user.is_admin or request.user.is_operator) and (
             request.user.is_admin or not order.is_locked
         ),
-        "participant_values": _participant_inns(order),
+        "participant_values": _participant_orgs(order),
         "history": order.history.select_related("user")[:50],
         "active_file": order.active_file,
         "statuses": Status.choices,
@@ -192,12 +194,13 @@ def order_new(request):
                 resp = HttpResponse(status=204)
                 resp["HX-Redirect"] = f"/orders/?selected={order.pk}"
                 return resp
-        # Re-render keeping the participant rows the user already entered.
+        # Re-render keeping the participant orgs the user already chose.
+        chosen = Organization.objects.filter(pk__in=request.POST.getlist("participant_orgs"))
         return render(request, "orders/_card_new.html",
-                      {"form": form, "participant_values": request.POST.getlist("participant_inns")})
+                      {"form": form, "participant_values": list(chosen)})
     form = OrderForm(user=request.user, stage=matrix.STAGE_CREATE, is_create=True,
                      initial={"status": Status.PLANNED})
-    return render(request, "orders/_card_new.html", {"form": form, "participant_values": [""]})
+    return render(request, "orders/_card_new.html", {"form": form, "participant_values": []})
 
 
 @login_required

@@ -1,0 +1,27 @@
+{% comment %}
+Reusable organization combobox.
+Params: name (hidden field name), value_org (current Organization or None),
+disabled (bool), removable (bool — show ✕ for participant rows).
+Type an INN -> dropdown of matches (with КПП) -> pick -> shows «Наименование (ИНН)».
+{% endcomment %}
+{% if disabled %}
+  <div class="readonly-value">{{ value_org.display_name|default:"—" }}</div>
+{% else %}
+  <div class="org-combo" data-org-combo>
+    <div class="prow-line">
+      <input type="text" class="input org-search" autocomplete="off"
+             placeholder="Введите ИНН…"
+             value="{{ value_org.display_name|default:'' }}"
+             hx-post="{% url 'directories:org_suggest' %}"
+             hx-trigger="keyup[event.target.value.length==10||event.target.value.length==12] changed delay:500ms"
+             hx-vals='js:{inn: event.target.value}'
+             hx-target="next .org-options" hx-swap="innerHTML"
+             oninput="orgComboInvalidate(this)" onkeydown="orgComboKeydown(event)">
+      {% if removable %}
+        <button type="button" class="btn secondary sm" onclick="removeParticipantRow(this)" title="Убрать">✕</button>
+      {% endif %}
+    </div>
+    <input type="hidden" name="{{ name }}" class="org-id" value="{{ value_org.pk|default:'' }}">
+    <div class="org-options"></div>
+  </div>
+{% endif %}

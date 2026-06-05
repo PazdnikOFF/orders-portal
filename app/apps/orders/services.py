@@ -5,7 +5,6 @@ from django.db.models import QuerySet
 
 from apps.audit.models import ActionType
 from apps.audit.services import log_action
-from apps.directories.services import upsert_organization
 
 from .matrix import can_edit_field
 from .models import Order, OrderHistory, Status
@@ -79,9 +78,9 @@ def create_order(request, cleaned) -> Order:
     if not user.can_create_orders:
         raise PermissionDenied("Создание записей запрещено для вашей роли.")
 
-    distributor = upsert_organization(cleaned["distributor_inn"])
-    potential_user = upsert_organization(cleaned["potential_user_inn"])
-    participants = [upsert_organization(inn) for inn in cleaned.get("participant_inns", [])]
+    distributor = cleaned["distributor_org"]
+    potential_user = cleaned["potential_user_org"]
+    participants = list(cleaned.get("participant_orgs") or [])
 
     order = Order(
         manager=cleaned["manager"],
@@ -140,18 +139,16 @@ def update_order(request, order: Order, cleaned) -> Order:
         order.forecast_date = cleaned["forecast_date"]
         changed.append("forecast_date")
 
-    # --- organization FK fields (resolve INN -> Organization) ---
-    if allowed("distributor") and cleaned.get("distributor_inn"):
-        if cleaned["distributor_inn"] != order.distributor.inn:
-            org = upsert_organization(cleaned["distributor_inn"])
+    # --- organization FK fields (chosen Organization by id) ---
+    if allowed("distributor") and (org := cleaned.get("distributor_org")):
+        if org.pk != order.distributor_id:
             record_change(order, user, "distributor", "Дистрибьютор",
                           order.distributor.display_name, org.display_name)
             order.distributor = org
             changed.append("distributor")
 
-    if allowed("potential_user") and cleaned.get("potential_user_inn"):
-        if cleaned["potential_user_inn"] != order.potential_user.inn:
-            org = upsert_organization(cleaned["potential_user_inn"])
+    if allowed("potential_user") and (org := cleaned.get("potential_user_org")):
+        if org.pk != order.potential_user_id:
             record_change(order, user, "potential_user", "Потенциальный пользователь",
                           order.potential_user.display_name, org.display_name)
             order.potential_user = org
@@ -170,13 +167,13 @@ def update_order(request, order: Order, cleaned) -> Order:
         order.save()
 
     # --- participants M2M ---
-    if allowed("participants") and "participant_inns" in cleaned:
-        new_orgs = [upsert_organization(inn) for inn in cleaned["participant_inns"]]
-        old_set = set(order.participants.values_list("inn", flat=True))
-        new_set = {o.inn for o in new_orgs}
-        if old_set != new_set:
-            old_disp = ", ".join(sorted(old_set))
-            new_disp = ", ".join(sorted(new_set))
+    if allowed("participants") and "participant_orgs" in cleaned:
+        new_orgs = list(cleaned["participant_orgs"])
+        old_ids = set(order.participants.values_list("pk", flat=True))
+        new_ids = {o.pk for o in new_orgs}
+        if old_ids != new_ids:
+            old_disp = ", ".join(o.display_name for o in order.participants.all())
+            new_disp = ", ".join(o.display_name for o in new_orgs)
             order.participants.set(new_orgs)
             record_change(order, user, "participants", "Участники проекта", old_disp, new_disp)
             changed.append("participants")
