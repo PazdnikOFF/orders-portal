@@ -42,18 +42,40 @@ def _order_form_initial(order: Order) -> dict:
     }
 
 
-def _filtered_orders(request):
-    """Per-column filtering — each table column has its own filter input."""
-    qs = visible_orders(request.user)
-    g = request.GET
-    needs_distinct = False
+DONE_STATUSES = [Status.PRODUCED, Status.CANCELLED]
 
+
+def _apply_common_filters(request, qs):
+    """Filters shared by table and Kanban: manager, distributor, user, date range."""
+    g = request.GET
     if v := g.get("f_manager", "").strip():
         qs = qs.filter(Q(manager__last_name__icontains=v) | Q(manager__first_name__icontains=v))
     if v := g.get("f_distributor", "").strip():
         qs = qs.filter(Q(distributor__name__icontains=v) | Q(distributor__inn__icontains=v))
     if v := g.get("f_potential", "").strip():
         qs = qs.filter(Q(potential_user__name__icontains=v) | Q(potential_user__inn__icontains=v))
+    if v := parse_date(g.get("f_forecast_from", "")):
+        qs = qs.filter(forecast_date__gte=v)
+    if v := parse_date(g.get("f_forecast_to", "")):
+        qs = qs.filter(forecast_date__lte=v)
+    return qs
+
+
+def _hide_done(request, qs):
+    """Hide produced/cancelled by default unless «show_done» or filtered to one."""
+    if request.GET.get("show_done") == "1":
+        return qs
+    if request.GET.get("f_status", "") in DONE_STATUSES:
+        return qs
+    return qs.exclude(status__in=DONE_STATUSES)
+
+
+def _filtered_orders(request):
+    """Per-column filtering — each table column has its own filter input."""
+    qs = _apply_common_filters(request, visible_orders(request.user))
+    g = request.GET
+    needs_distinct = False
+
     if v := g.get("f_participant", "").strip():
         qs = qs.filter(Q(participants__name__icontains=v) | Q(participants__inn__icontains=v))
         needs_distinct = True
@@ -68,6 +90,7 @@ def _filtered_orders(request):
     if (v := g.get("f_status", "")) in Status.values:
         qs = qs.filter(status=v)
 
+    qs = _hide_done(request, qs)
     if needs_distinct:
         qs = qs.distinct()
 
@@ -92,6 +115,7 @@ def table(request):
         "orders": orders,
         "statuses": Status.choices,
         "has_filters": any(request.GET.get(k) for k in filter_keys),
+        "show_done": request.GET.get("show_done") == "1",
         "selected_pk": selected_pk,
         "view": "table",
     }
@@ -103,15 +127,24 @@ def table(request):
 # --------------------------------------------------------------------------- #
 @login_required
 def kanban(request):
-    orders = visible_orders(request.user)
-    columns = []
-    for status in KANBAN_STATUSES:
-        columns.append({
-            "status": status,
-            "label": Status(status).label,
-            "orders": [o for o in orders if o.status == status],
-        })
-    return render(request, "orders/kanban.html", {"columns": columns, "view": "kanban"})
+    qs = _apply_common_filters(request, visible_orders(request.user))
+    show_done = request.GET.get("show_done") == "1"
+    statuses = list(KANBAN_STATUSES) if show_done else [Status.PLANNED, Status.IN_PROGRESS]
+    orders = list(qs)
+    columns = [{
+        "status": status,
+        "label": Status(status).label,
+        "orders": [o for o in orders if o.status == status],
+    } for status in statuses]
+    filter_keys = ["f_manager", "f_distributor", "f_potential", "f_forecast_from", "f_forecast_to"]
+    context = {
+        "columns": columns,
+        "col_count": len(columns),
+        "show_done": show_done,
+        "has_filters": any(request.GET.get(k) for k in filter_keys),
+        "view": "kanban",
+    }
+    return render(request, "orders/kanban.html", context)
 
 
 # --------------------------------------------------------------------------- #

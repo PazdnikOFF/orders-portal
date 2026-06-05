@@ -5,31 +5,70 @@
 <div class="toolbar">
   <strong>Канбан-доска</strong>
   <span class="muted">
-    {% if caps.change_status %}Перетаскивайте карточки между колонками для смены статуса.
-    {% else %}Режим просмотра (изменение статуса недоступно для вашей роли).{% endif %}
+    {% if caps.change_status %}Перетаскивайте карточки между колонками; клик по карточке — открыть редактирование.
+    {% else %}Режим просмотра. Клик по карточке — открыть карточку.{% endif %}
   </span>
+  {% if has_filters or show_done %}
+    <a class="btn secondary sm" href="{% url 'orders:kanban' %}">✕ Сбросить</a>
+  {% endif %}
   <div class="spacer"></div>
   <a class="btn secondary" href="{% url 'orders:table' %}">К таблице</a>
 </div>
 
-<div class="kanban">
+<form method="get" action="{% url 'orders:kanban' %}" class="toolbar kanban-filters">
+  <input class="input" name="f_manager" value="{{ request.GET.f_manager }}"
+         placeholder="Менеджер" onchange="this.form.submit()">
+  <input class="input" name="f_distributor" value="{{ request.GET.f_distributor }}"
+         placeholder="Дистрибьютор (назв./ИНН)" onchange="this.form.submit()">
+  <input class="input" name="f_potential" value="{{ request.GET.f_potential }}"
+         placeholder="Пользователь (назв./ИНН)" onchange="this.form.submit()">
+  <span class="muted">Реализация:</span>
+  <input class="input" type="date" name="f_forecast_from" value="{{ request.GET.f_forecast_from }}"
+         title="с" onchange="this.form.submit()">
+  <span class="muted">—</span>
+  <input class="input" type="date" name="f_forecast_to" value="{{ request.GET.f_forecast_to }}"
+         title="по" onchange="this.form.submit()">
+  <label class="check-inline">
+    <input type="checkbox" name="show_done" value="1" {% if show_done %}checked{% endif %}
+           onchange="this.form.submit()"> Показывать завершённые
+  </label>
+  <button class="btn secondary sm" type="submit">Применить</button>
+</form>
+
+<div class="kanban" style="grid-template-columns:repeat({{ col_count }},minmax(0,1fr))">
   {% for col in columns %}
-    <div class="column {% if col.status == 'produced' or col.status == 'cancelled' %}terminal{% endif %}" data-status="{{ col.status }}">
+    <div class="column {% if col.status == 'produced' or col.status == 'cancelled' %}terminal{% endif %}"
+         data-status="{{ col.status }}">
       <h4>{{ col.label }} <span class="muted">{{ col.orders|length }}</span></h4>
       <div class="cards">
         {% for order in col.orders %}
-          <div class="kcard" data-order-id="{{ order.pk }}" data-status="{{ order.status }}">
+          <div class="kcard" data-order-id="{{ order.pk }}" data-status="{{ order.status }}"
+               hx-get="{% url 'orders:card' order.pk %}" hx-target="#card-block" hx-swap="innerHTML"
+               onclick="document.querySelectorAll('.kcard').forEach(function(c){c.classList.remove('sel')});this.classList.add('sel');">
             <div class="num">{{ order.order_code }}
-              {% if order.active_file %}<a href="{{ order.active_file.serve_url }}" target="_blank" title="файл">📎</a>{% endif %}
+              {% if order.active_file %}<span title="есть файл">📎</span>{% endif %}
             </div>
             <div class="meta">Менеджер: {{ order.manager.short_name }}</div>
             <div class="meta">Дистр.: {{ order.distributor.name }}</div>
             <div class="meta">Польз.: {{ order.potential_user.name }}</div>
-            <div class="meta">Реализация: {{ order.forecast_date|date:"d.m.Y" }}</div>
+            <div class="meta">Реализация:
+              <span class="{{ order.forecast_urgency }}">{{ order.forecast_date|date:"d.m.Y" }}</span>
+            </div>
           </div>
         {% endfor %}
       </div>
     </div>
   {% endfor %}
+</div>
+
+{# Bottom block — same order card as the table view (TЗ §9) #}
+<div class="card-block" id="card-wrap" x-data="{open:true}">
+  <div class="toolbar">
+    <strong>Карточка записи</strong>
+    <button class="btn ghost sm" @click="open=!open" x-text="open ? 'Свернуть ▲' : 'Развернуть ▼'"></button>
+  </div>
+  <div id="card-block" x-show="open" x-transition>
+    <div class="panel card-section muted">Нажмите на карточку, чтобы открыть её для просмотра/редактирования.</div>
+  </div>
 </div>
 {% endblock %}

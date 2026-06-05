@@ -51,9 +51,18 @@ table.grid th,table.grid td{padding:8px 10px;border-bottom:1px solid var(--borde
 table.grid th{background:#eef2f7;font-size:12px;text-transform:uppercase;color:#54616e;
   letter-spacing:.4px}
 table.grid tbody tr{cursor:pointer}
-table.grid tbody tr:hover{background:#f0f6ff}
-table.grid tbody tr.selected{background:#dbeafe}
+/* Row tint by status (TЗ UX). Hover/selected below override via higher specificity. */
+table.grid tbody tr.row-planned td{background:#eff6ff}
+table.grid tbody tr.row-in_progress td{background:#fff7ed}
+table.grid tbody tr.row-produced td{background:#f0fdf4}
+table.grid tbody tr.row-cancelled td{background:#f4f5f7;color:#8a929c}
+table.grid tbody tr.order-row:hover td{background:#e0ecff}
+table.grid tbody tr.order-row.selected td{background:#cfe0fb}
 .org-list{white-space:pre-line;font-size:13px}
+
+/* Forecast-date deadline proximity */
+.due-soon{color:#ea580c;font-weight:700}
+.due-month{color:#2563eb;font-weight:700}
 
 /* Per-column filter row */
 table.grid thead tr.filter-row th{background:#f6f8fb;padding:4px 6px}
@@ -89,8 +98,10 @@ select.status-select{border-radius:12px;border:1px solid var(--border);padding:3
 .errorlist{list-style:none;padding:0;margin:4px 0 0;color:var(--danger);font-size:12px}
 
 /* Participants widget */
-.participant-row{display:flex;gap:8px;margin-bottom:6px;align-items:center}
-.participant-row .input{flex:1}
+.participant-row{margin-bottom:8px}
+.prow-line{display:flex;gap:8px;align-items:center}
+.prow-line .input{flex:1}
+.participant-row .lk{margin-top:3px}
 
 /* Kanban */
 .kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
@@ -103,7 +114,12 @@ select.status-select{border-radius:12px;border:1px solid var(--border);padding:3
 .kanban .kcard .num{font-weight:700}
 .kanban .kcard .meta{font-size:12px;color:#54616e;margin-top:4px}
 .kanban .column.locked .kcard{cursor:default}
+.kanban .kcard.sel{outline:2px solid var(--accent);outline-offset:1px}
 .sortable-ghost{opacity:.4}
+.kanban-filters{flex-wrap:wrap;gap:8px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:14px}
+.kanban-filters .input{max-width:190px}
+.kanban-filters input[type=date].input{max-width:150px}
+.check-inline{display:inline-flex;align-items:center;gap:6px;font-weight:500;font-size:13px;margin:0;cursor:pointer}
 
 /* History */
 .history{font-size:13px;max-height:280px;overflow:auto}

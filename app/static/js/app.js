@@ -80,20 +80,14 @@ function addParticipantRow(btn) {
   if (!wrap) return;
   var rows = wrap.querySelector(".participant-rows");
   var last = rows.querySelector(".participant-row:last-child");
-  var row;
-  if (last) {
-    row = last.cloneNode(true);
-  } else {
-    row = document.createElement("div");
-    row.className = "participant-row";
-    row.innerHTML =
-      '<input class="input" type="text" inputmode="numeric" name="participant_inns" ' +
-      'placeholder="ИНН организации" autocomplete="off">' +
-      '<button type="button" class="btn secondary sm" onclick="removeParticipantRow(this)" title="Убрать">✕</button>';
-  }
+  if (!last) return;
+  var row = last.cloneNode(true);          // keeps the hx-* lookup attributes
   var input = row.querySelector("input");
   if (input) input.value = "";
+  var lk = row.querySelector(".lk");
+  if (lk) lk.innerHTML = "";
   rows.appendChild(row);
+  if (window.htmx) htmx.process(row);      // activate auto-lookup on the new row
   if (input) input.focus();
 }
 
@@ -104,7 +98,9 @@ function removeParticipantRow(btn) {
   if (!rows || !row) return;
   if (rows.querySelectorAll(".participant-row").length <= 1) {
     var input = row.querySelector("input");
-    if (input) input.value = "";   // keep at least one (empty) row
+    if (input) input.value = "";           // keep at least one (empty) row
+    var lk = row.querySelector(".lk");
+    if (lk) lk.innerHTML = "";
   } else {
     row.remove();
   }

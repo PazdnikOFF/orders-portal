@@ -7,6 +7,11 @@
   {% if has_filters %}
     <a class="btn secondary sm" href="{% url 'orders:table' %}">✕ Сбросить фильтры</a>
   {% endif %}
+  <label class="check-inline">
+    <input type="checkbox" form="filters" name="show_done" value="1"
+           {% if show_done %}checked{% endif %} onchange="this.form.submit()">
+    Показывать завершённые
+  </label>
   <div class="spacer"></div>
   {% if caps.create_orders %}
     <button class="btn" hx-get="{% url 'orders:new' %}" hx-target="#card-block" hx-swap="innerHTML">

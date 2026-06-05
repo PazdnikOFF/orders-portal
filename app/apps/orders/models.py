@@ -113,6 +113,23 @@ class Order(models.Model):
         return f"ORD-{self.order_number:06d}"
 
     @property
+    def forecast_urgency(self) -> str:
+        """
+        Deadline proximity for the forecast date (TЗ UX):
+          "due-soon"  — less than 2 weeks left (orange, includes overdue),
+          "due-month" — less than a month left (blue),
+          ""          — far enough / closed order.
+        """
+        if self.status in (Status.PRODUCED, Status.CANCELLED) or not self.forecast_date:
+            return ""
+        delta = (self.forecast_date - timezone.localdate()).days
+        if delta < 14:
+            return "due-soon"
+        if delta < 30:
+            return "due-month"
+        return ""
+
+    @property
     def active_file(self):
         """The currently attached (non-detached) order file, if any."""
         return self.files.filter(is_detached=False).order_by("-uploaded_at").first()
