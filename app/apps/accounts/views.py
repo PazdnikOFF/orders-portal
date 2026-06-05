@@ -70,11 +70,15 @@ def user_edit(request, pk):
     form = UserEditForm(request.POST or None, instance=user)
     if request.method == "POST" and form.is_valid():
         form.save()
-        log_action(
-            request, ActionType.USER_UPDATE, target=user,
-            summary=f"Изменён пользователь {user.username} (роль {user.get_role_display()})",
+        pwd_changed = bool(form.cleaned_data.get("new_password"))
+        summary = f"Изменён пользователь {user.username} (роль {user.get_role_display()})"
+        if pwd_changed:
+            summary += "; задан новый пароль"
+        log_action(request, ActionType.USER_UPDATE, target=user, summary=summary)
+        messages.success(
+            request,
+            "Изменения сохранены." + (" Пароль обновлён." if pwd_changed else ""),
         )
-        messages.success(request, "Изменения сохранены.")
         return redirect("accounts:user_list")
     return render(
         request, "accounts/user_form.html",

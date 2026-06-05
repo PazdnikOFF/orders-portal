@@ -54,12 +54,18 @@ class UserCreateForm(forms.ModelForm):
 
 
 class UserEditForm(forms.ModelForm):
-    """Admin edits role / block status; password change is optional."""
+    """Admin edits profile/role/block status and may set a new password."""
 
     new_password = forms.CharField(
-        label="Новый пароль (необязательно)",
+        label="Новый пароль",
         required=False,
-        widget=forms.PasswordInput(attrs={"class": "input"}),
+        help_text="Оставьте оба поля пустыми, чтобы не менять пароль.",
+        widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password"}),
+    )
+    new_password2 = forms.CharField(
+        label="Повтор нового пароля",
+        required=False,
+        widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password"}),
     )
 
     class Meta:
@@ -70,6 +76,14 @@ class UserEditForm(forms.ModelForm):
             "role": forms.Select(attrs={"class": "input"}),
             "employee": forms.Select(attrs={"class": "input"}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        p1 = cleaned.get("new_password")
+        p2 = cleaned.get("new_password2")
+        if (p1 or p2) and p1 != p2:
+            self.add_error("new_password2", "Пароли не совпадают.")
+        return cleaned
 
     def save(self, commit=True):
         user = super().save(commit=False)
