@@ -72,12 +72,40 @@
   });
 })();
 
-/* Alpine component for the order card's participants list (dynamic orgs). */
-function participantsWidget(initial) {
-  return {
-    items: initial && initial.length ? initial.slice() : [""],
-    add() { this.items.push(""); },
-    remove(i) { this.items.splice(i, 1); if (!this.items.length) this.items.push(""); },
-    get json() { return JSON.stringify(this.items.map(function (x) { return (x || "").trim(); }).filter(Boolean)); },
-  };
+/* Dynamic participant-INN rows. Plain JS so it works inside HTMX-swapped
+   cards (no framework init needed). Each row is an <input name="participant_inns">;
+   the server collects them via request.POST.getlist(). */
+function addParticipantRow(btn) {
+  var wrap = btn.closest("[data-participants]");
+  if (!wrap) return;
+  var rows = wrap.querySelector(".participant-rows");
+  var last = rows.querySelector(".participant-row:last-child");
+  var row;
+  if (last) {
+    row = last.cloneNode(true);
+  } else {
+    row = document.createElement("div");
+    row.className = "participant-row";
+    row.innerHTML =
+      '<input class="input" type="text" inputmode="numeric" name="participant_inns" ' +
+      'placeholder="ИНН организации" autocomplete="off">' +
+      '<button type="button" class="btn secondary sm" onclick="removeParticipantRow(this)" title="Убрать">✕</button>';
+  }
+  var input = row.querySelector("input");
+  if (input) input.value = "";
+  rows.appendChild(row);
+  if (input) input.focus();
+}
+
+function removeParticipantRow(btn) {
+  var wrap = btn.closest("[data-participants]");
+  var rows = wrap ? wrap.querySelector(".participant-rows") : null;
+  var row = btn.closest(".participant-row");
+  if (!rows || !row) return;
+  if (rows.querySelectorAll(".participant-row").length <= 1) {
+    var input = row.querySelector("input");
+    if (input) input.value = "";   // keep at least one (empty) row
+  } else {
+    row.remove();
+  }
 }

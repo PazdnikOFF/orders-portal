@@ -1,0 +1,21 @@
+{# Dynamic participant-INN rows. Each row is a separate input named
+   "participant_inns"; the server reads them via request.POST.getlist(). Add /
+   remove handled by plain JS (works inside HTMX-swapped cards). #}
+<div data-participants>
+  <div class="participant-rows">
+    {% for inn in participant_values %}
+      <div class="participant-row">
+        <input class="input" type="text" inputmode="numeric" name="participant_inns"
+               value="{{ inn }}" placeholder="ИНН организации" autocomplete="off">
+        <button type="button" class="btn secondary sm" onclick="removeParticipantRow(this)" title="Убрать">✕</button>
+      </div>
+    {% empty %}
+      <div class="participant-row">
+        <input class="input" type="text" inputmode="numeric" name="participant_inns"
+               value="" placeholder="ИНН организации" autocomplete="off">
+        <button type="button" class="btn secondary sm" onclick="removeParticipantRow(this)" title="Убрать">✕</button>
+      </div>
+    {% endfor %}
+  </div>
+  <button type="button" class="btn ghost sm" onclick="addParticipantRow(this)">+ организация</button>
+</div>

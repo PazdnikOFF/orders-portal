@@ -1,5 +1,3 @@
-import json
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -28,12 +26,16 @@ SORT_FIELDS = {
 }
 
 
+def _participant_inns(order: Order) -> list[str]:
+    return list(order.participants.values_list("inn", flat=True))
+
+
 def _order_form_initial(order: Order) -> dict:
     return {
         "manager": order.manager_id,
         "distributor_inn": order.distributor.inn,
         "potential_user_inn": order.potential_user.inn,
-        "participant_inns": json.dumps(list(order.participants.values_list("inn", flat=True))),
+        "participant_inns": _participant_inns(order),
         "kit": order.kit,
         "forecast_date": order.forecast_date,
         "status": order.status,
@@ -133,6 +135,7 @@ def _card_context(request, order, form):
         "can_edit": (request.user.is_admin or request.user.is_operator) and (
             request.user.is_admin or not order.is_locked
         ),
+        "participant_values": _participant_inns(order),
         "history": order.history.select_related("user")[:50],
         "active_file": order.active_file,
         "statuses": Status.choices,
@@ -156,10 +159,12 @@ def order_new(request):
                 resp = HttpResponse(status=204)
                 resp["HX-Redirect"] = f"/orders/?selected={order.pk}"
                 return resp
-        return render(request, "orders/_card_new.html", {"form": form})
+        # Re-render keeping the participant rows the user already entered.
+        return render(request, "orders/_card_new.html",
+                      {"form": form, "participant_values": request.POST.getlist("participant_inns")})
     form = OrderForm(user=request.user, stage=matrix.STAGE_CREATE, is_create=True,
                      initial={"status": Status.PLANNED})
-    return render(request, "orders/_card_new.html", {"form": form})
+    return render(request, "orders/_card_new.html", {"form": form, "participant_values": [""]})
 
 
 @login_required

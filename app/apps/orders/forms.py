@@ -3,8 +3,6 @@ Order card form. Organization fields are entered as INN and resolved to
 Organization records on save (TЗ §12). Field availability is gated by the
 stage/role matrix — non-editable fields are rendered disabled.
 """
-import json
-
 from django import forms
 from django.urls import reverse_lazy
 
@@ -31,6 +29,40 @@ def _inn_widget(input_id: str, field_key: str, target_id: str) -> forms.TextInpu
     })
 
 
+class INNListWidget(forms.Widget):
+    """
+    Collects an unbounded list of «participant_inns» inputs (one per row) into a
+    Python list. Rendered manually in the template (dynamic add/remove rows), so
+    render() returns nothing.
+    """
+
+    def value_from_datadict(self, data, files, name):
+        if hasattr(data, "getlist"):
+            return data.getlist(name)
+        return data.get(name)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        return ""
+
+
+class INNListField(forms.Field):
+    """A variable-length list of organization INNs (the project participants)."""
+
+    widget = INNListWidget
+
+    def clean(self, value):
+        inns = []
+        for raw in value or []:
+            raw = (raw or "").strip()
+            if not raw:
+                continue
+            if not raw.isdigit() or len(raw) not in (10, 12):
+                raise forms.ValidationError("ИНН участника должен содержать 10 или 12 цифр.")
+            if raw not in inns:  # keep unique, preserve order
+                inns.append(raw)
+        return inns
+
+
 class OrderForm(forms.Form):
     manager = forms.ModelChoiceField(
         label="Менеджер",
@@ -46,10 +78,9 @@ class OrderForm(forms.Form):
         label="Потенциальный пользователь (ИНН)", max_length=12,
         widget=_inn_widget("id_potential_user_inn", "potential_user", "lk-potential"),
     )
-    # Hidden JSON array of participant INNs, managed by the Alpine widget.
-    participant_inns = forms.CharField(
-        label="Участники проекта", required=False, widget=forms.HiddenInput()
-    )
+    # Variable-length list of participant INNs — rendered as repeated inputs,
+    # collected via request.POST.getlist("participant_inns").
+    participant_inns = INNListField(label="Участники проекта", required=False)
     kit = forms.CharField(
         label="Комплект", max_length=500, widget=forms.TextInput(attrs={"class": "input"})
     )
@@ -95,21 +126,6 @@ class OrderForm(forms.Form):
 
     def clean_potential_user_inn(self):
         return self._clean_inn(self.cleaned_data.get("potential_user_inn"))
-
-    def clean_participant_inns(self):
-        raw = (self.cleaned_data.get("participant_inns") or "").strip()
-        if not raw:
-            return []
-        try:
-            items = json.loads(raw) if raw.startswith("[") else [x for x in raw.replace(",", "\n").split("\n")]
-        except json.JSONDecodeError:
-            raise forms.ValidationError("Некорректный список участников.")
-        inns = []
-        for item in items:
-            inn = self._clean_inn(str(item))
-            if inn:
-                inns.append(inn)
-        return inns
 
     def clean(self):
         cleaned = super().clean()

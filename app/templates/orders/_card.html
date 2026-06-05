@@ -32,23 +32,15 @@
           {% for e in form.potential_user_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
-        {# Участники проекта (Комментарий) #}
+        {# Участники проекта (Комментарий) — динамический список ИНН #}
         <div class="field">
           <label>Участники проекта (Комментарий)</label>
           {% if form.participant_inns.field.disabled %}
             <div class="org-list readonly-value">{% for p in order.participants.all %}{{ p.display_name }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</div>
           {% else %}
-            <div x-data="participantsWidget({{ form.participant_inns.value|default:'[]'|safe }})">
-              <template x-for="(item, i) in items" :key="i">
-                <div class="participant-row">
-                  <input class="input" type="text" inputmode="numeric" placeholder="ИНН организации" x-model="items[i]">
-                  <button type="button" class="btn secondary sm" @click="remove(i)">✕</button>
-                </div>
-              </template>
-              <button type="button" class="btn ghost sm" @click="add()">+ организация</button>
-              <input type="hidden" name="participant_inns" :value="json">
-            </div>
+            {% include "orders/_participants.html" with participant_values=participant_values %}
             <div class="hint">Текущие: {% for p in order.participants.all %}{{ p.display_name }}{% if not forloop.last %}; {% endif %}{% empty %}—{% endfor %}</div>
+            {% for e in form.participant_inns.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
           {% endif %}
         </div>
       </div>
