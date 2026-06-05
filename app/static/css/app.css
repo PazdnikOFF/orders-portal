@@ -49,14 +49,14 @@ table.grid{width:100%;border-collapse:collapse;background:#fff}
 table.grid th,table.grid td{padding:8px 10px;border-bottom:1px solid var(--border);
   text-align:left;vertical-align:top}
 table.grid th{background:#eef2f7;font-size:12px;text-transform:uppercase;color:#54616e;
-  letter-spacing:.4px;position:sticky;top:52px}
+  letter-spacing:.4px}
 table.grid tbody tr{cursor:pointer}
 table.grid tbody tr:hover{background:#f0f6ff}
 table.grid tbody tr.selected{background:#dbeafe}
 .org-list{white-space:pre-line;font-size:13px}
 
 /* Per-column filter row */
-table.grid thead tr.filter-row th{background:#f6f8fb;padding:4px 6px;top:auto;position:static}
+table.grid thead tr.filter-row th{background:#f6f8fb;padding:4px 6px}
 table.grid thead tr.filter-row .input{padding:4px 7px;font-size:12px;font-weight:400;
   text-transform:none;letter-spacing:0;color:var(--text)}
 
