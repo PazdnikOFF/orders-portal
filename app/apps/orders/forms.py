@@ -6,11 +6,29 @@ stage/role matrix — non-editable fields are rendered disabled.
 import json
 
 from django import forms
+from django.urls import reverse_lazy
 
 from apps.directories.models import Employee, EmployeeType
 
 from . import matrix
 from .models import Status
+
+# Fire the lookup automatically once a full INN (10 or 12 digits) is entered —
+# no button click. `event.target` is the input in both keyup and change filters.
+_INN_VALID_LEN = "event.target.value.length==10||event.target.value.length==12"
+
+
+def _inn_widget(input_id: str, field_key: str, target_id: str) -> forms.TextInput:
+    return forms.TextInput(attrs={
+        "class": "input inn-input",
+        "inputmode": "numeric",
+        "autocomplete": "off",
+        "hx-post": reverse_lazy("directories:org_lookup"),
+        "hx-trigger": f"keyup[{_INN_VALID_LEN}] changed delay:500ms, change[{_INN_VALID_LEN}]",
+        "hx-vals": f'js:{{inn: document.getElementById("{input_id}").value, field:"{field_key}"}}',
+        "hx-target": f"#{target_id}",
+        "hx-swap": "innerHTML",
+    })
 
 
 class OrderForm(forms.Form):
@@ -22,11 +40,11 @@ class OrderForm(forms.Form):
     )
     distributor_inn = forms.CharField(
         label="Дистрибьютор (ИНН)", max_length=12,
-        widget=forms.TextInput(attrs={"class": "input inn-input", "inputmode": "numeric"}),
+        widget=_inn_widget("id_distributor_inn", "distributor", "lk-distributor"),
     )
     potential_user_inn = forms.CharField(
         label="Потенциальный пользователь (ИНН)", max_length=12,
-        widget=forms.TextInput(attrs={"class": "input inn-input", "inputmode": "numeric"}),
+        widget=_inn_widget("id_potential_user_inn", "potential_user", "lk-potential"),
     )
     # Hidden JSON array of participant INNs, managed by the Alpine widget.
     participant_inns = forms.CharField(

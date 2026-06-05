@@ -16,27 +16,15 @@
 
         <div class="field">
           <label>{{ form.distributor_inn.label }} *</label>
-          <div class="participant-row">
-            {{ form.distributor_inn }}
-            <button type="button" class="btn secondary sm"
-              hx-post="{% url 'directories:org_lookup' %}"
-              hx-vals='js:{inn: document.getElementById("{{ form.distributor_inn.id_for_label }}").value, field:"distributor"}'
-              hx-target="#lk-new-distributor" hx-swap="innerHTML">Проверить</button>
-          </div>
-          <div id="lk-new-distributor" class="lookup-result"></div>
+          {{ form.distributor_inn }}
+          <div id="lk-distributor" class="lookup-result"></div>
           {% for e in form.distributor_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
         <div class="field">
           <label>{{ form.potential_user_inn.label }} *</label>
-          <div class="participant-row">
-            {{ form.potential_user_inn }}
-            <button type="button" class="btn secondary sm"
-              hx-post="{% url 'directories:org_lookup' %}"
-              hx-vals='js:{inn: document.getElementById("{{ form.potential_user_inn.id_for_label }}").value, field:"potential_user"}'
-              hx-target="#lk-new-potential" hx-swap="innerHTML">Проверить</button>
-          </div>
-          <div id="lk-new-potential" class="lookup-result"></div>
+          {{ form.potential_user_inn }}
+          <div id="lk-potential" class="lookup-result"></div>
           {% for e in form.potential_user_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 

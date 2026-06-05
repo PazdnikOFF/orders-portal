@@ -16,34 +16,18 @@
           {% for e in form.manager.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
-        {# Дистрибьютор #}
+        {# Дистрибьютор — поиск по ИНН запускается автоматически #}
         <div class="field">
           <label>{{ form.distributor_inn.label }}</label>
-          <div class="participant-row">
-            {{ form.distributor_inn }}
-            {% if not form.distributor_inn.field.disabled %}
-            <button type="button" class="btn secondary sm"
-              hx-post="{% url 'directories:org_lookup' %}"
-              hx-vals='js:{inn: document.getElementById("{{ form.distributor_inn.id_for_label }}").value, field:"distributor"}'
-              hx-target="#lk-distributor" hx-swap="innerHTML">Проверить</button>
-            {% endif %}
-          </div>
+          {{ form.distributor_inn }}
           <div id="lk-distributor" class="lookup-result">✓ {{ order.distributor.display_name }}</div>
           {% for e in form.distributor_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
-        {# Потенциальный пользователь #}
+        {# Потенциальный пользователь — поиск по ИНН запускается автоматически #}
         <div class="field">
           <label>{{ form.potential_user_inn.label }}</label>
-          <div class="participant-row">
-            {{ form.potential_user_inn }}
-            {% if not form.potential_user_inn.field.disabled %}
-            <button type="button" class="btn secondary sm"
-              hx-post="{% url 'directories:org_lookup' %}"
-              hx-vals='js:{inn: document.getElementById("{{ form.potential_user_inn.id_for_label }}").value, field:"potential_user"}'
-              hx-target="#lk-potential" hx-swap="innerHTML">Проверить</button>
-            {% endif %}
-          </div>
+          {{ form.potential_user_inn }}
           <div id="lk-potential" class="lookup-result">✓ {{ order.potential_user.display_name }}</div>
           {% for e in form.potential_user_inn.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
