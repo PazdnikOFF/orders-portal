@@ -78,7 +78,26 @@
     <button class="btn ghost sm" @click="open=!open" x-text="open ? 'Свернуть ▲' : 'Развернуть ▼'"></button>
   </div>
   <div id="card-block" x-show="open" x-transition>
-    <div class="panel card-section muted">Выберите строку в таблице для просмотра карточки.</div>
+    {% if selected_pk %}
+      {# Auto-open the just-created/selected order's card (incl. file upload). #}
+      <div hx-get="{% url 'orders:card' selected_pk %}" hx-trigger="load"
+           hx-target="#card-block" hx-swap="innerHTML">
+        <div class="panel card-section muted">Загрузка карточки…</div>
+      </div>
+    {% else %}
+      <div class="panel card-section muted">Выберите строку в таблице для просмотра карточки.</div>
+    {% endif %}
   </div>
 </div>
+
+{% if selected_pk %}
+<div id="auto-select" data-pk="{{ selected_pk }}" hidden></div>
+<script>
+  (function () {
+    var pk = document.getElementById("auto-select").dataset.pk;
+    var row = document.getElementById("order-row-" + pk);
+    if (row) { row.classList.add("selected"); row.scrollIntoView({block: "center"}); }
+  })();
+</script>
+{% endif %}
 {% endblock %}

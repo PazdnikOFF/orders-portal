@@ -83,10 +83,14 @@ def table(request):
     orders = _filtered_orders(request)
     filter_keys = ["f_manager", "f_distributor", "f_potential", "f_participant",
                    "f_kit", "f_request_date", "f_forecast_date", "f_number", "f_status"]
+    # After creating an order we land on ?selected=<pk> to auto-open its card.
+    selected = request.GET.get("selected")
+    selected_pk = int(selected) if selected and selected.isdigit() else None
     context = {
         "orders": orders,
         "statuses": Status.choices,
         "has_filters": any(request.GET.get(k) for k in filter_keys),
+        "selected_pk": selected_pk,
         "view": "table",
     }
     return render(request, "orders/table.html", context)
