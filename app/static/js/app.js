@@ -138,19 +138,38 @@ function orgSearchInput(input) {
 function selectOrgOption(btn) {
   var combo = btn.closest("[data-org-combo]");
   if (!combo) return;
+  var inn = btn.dataset.inn || "";
+
+  // Within participants, the same INN must not be added twice (branches with
+  // different КПП share the INN). Other fields may reuse the INN.
+  var participants = combo.closest("[data-participants]");
+  if (participants && inn) {
+    var duplicate = false;
+    participants.querySelectorAll("[data-org-combo]").forEach(function (c) {
+      if (c !== combo && c.dataset.inn === inn) duplicate = true;
+    });
+    if (duplicate) {
+      alert("Организация с ИНН " + inn + " уже добавлена в участники.");
+      return;
+    }
+  }
+
   var id = combo.querySelector(".org-id");
   var search = combo.querySelector(".org-search");
   var opts = combo.querySelector(".org-options");
   if (id) id.value = btn.dataset.orgId || "";
   if (search) search.value = btn.dataset.display || "";   // «Наименование (ИНН)»
   if (opts) opts.innerHTML = "";
+  combo.dataset.inn = inn;
 }
 
 function orgComboInvalidate(input) {
   // The typed text no longer matches a confirmed selection.
   var combo = input.closest("[data-org-combo]");
-  var id = combo ? combo.querySelector(".org-id") : null;
+  if (!combo) return;
+  var id = combo.querySelector(".org-id");
   if (id) id.value = "";
+  delete combo.dataset.inn;
 }
 
 function orgComboKeydown(e) {
@@ -166,6 +185,7 @@ function _clearCombo(scope) {
   var id = scope.querySelector(".org-id"); if (id) id.value = "";
   var search = scope.querySelector(".org-search"); if (search) search.value = "";
   var opts = scope.querySelector(".org-options"); if (opts) opts.innerHTML = "";
+  var combo = scope.querySelector("[data-org-combo]"); if (combo) delete combo.dataset.inn;
 }
 
 /* Dynamic participant rows — each row is its own org combobox. */

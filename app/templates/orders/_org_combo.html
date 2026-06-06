@@ -7,7 +7,7 @@ Type an INN -> dropdown of matches (with КПП) -> pick -> shows «Наимен
 {% if disabled %}
   <div class="readonly-value">{{ value_org.display_name|default:"—" }}</div>
 {% else %}
-  <div class="org-combo" data-org-combo>
+  <div class="org-combo" data-org-combo {% if value_org %}data-inn="{{ value_org.inn }}"{% endif %}>
     <div class="prow-line">
       <input type="text" class="input org-search" autocomplete="off"
              placeholder="Введите ИНН…"
