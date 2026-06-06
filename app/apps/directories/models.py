@@ -51,5 +51,7 @@ class Organization(models.Model):
 
     @property
     def rusprofile_url(self) -> str:
-        """Link to the company card on Rusprofile (search by INN)."""
-        return f"https://www.rusprofile.ru/search?query={self.inn}"
+        """Link to the company card on Rusprofile (EGRUL extract by ОГРН)."""
+        if self.ogrn:
+            return f"https://www.rusprofile.ru/egrul?ogrn={self.ogrn}"
+        return "https://www.rusprofile.ru/"

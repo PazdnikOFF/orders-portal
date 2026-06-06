@@ -48,6 +48,15 @@
   }
   document.addEventListener("DOMContentLoaded", dismissMessages);
 
+  // --- When a card loads into the bottom block, expand it and scroll to it ---
+  document.body.addEventListener("htmx:afterSwap", function (e) {
+    var t = e.detail && e.detail.target;
+    if (t && t.id === "card-block") {
+      window.dispatchEvent(new CustomEvent("expand-card"));
+      try { t.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) {}
+    }
+  });
+
   // --- Kanban drag & drop --------------------------------------------------
   window.initKanban = function () {
     if (typeof Sortable === "undefined") return;
@@ -158,7 +167,7 @@ function selectOrgOption(btn) {
   var link = combo.querySelector(".org-link");
   if (link) {
     link.textContent = btn.dataset.display || "";
-    link.setAttribute("href", "https://www.rusprofile.ru/search?query=" + encodeURIComponent(inn));
+    link.setAttribute("href", btn.dataset.rusprofile || "#");
     link.hidden = false;
   }
   var search = combo.querySelector(".org-search");

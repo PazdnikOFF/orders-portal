@@ -63,7 +63,7 @@
 </div>
 
 {# Bottom block — same order card as the table view (TЗ §9) #}
-<div class="card-block" id="card-wrap" x-data="{open:true}">
+<div class="card-block" id="card-wrap" x-data="{open:true}" @expand-card.window="open=true">
   <div class="toolbar">
     <strong>Карточка записи</strong>
     <button class="btn ghost sm" @click="open=!open" x-text="open ? 'Свернуть ▲' : 'Развернуть ▼'"></button>
