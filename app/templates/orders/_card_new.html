@@ -1,6 +1,9 @@
 <div class="panel card-section">
-  <h3>Новый заказ</h3>
-  <form hx-post="{% url 'orders:new' %}" hx-target="#card-block" hx-swap="innerHTML">
+  <div class="card-head">
+    <h3>Новый заказ</h3>
+    <button type="button" class="btn ghost sm" onclick="closeCardGuarded()" title="Свернуть">✕ Свернуть</button>
+  </div>
+  <form hx-post="{% url 'orders:new' %}" hx-target="#card-block" hx-swap="innerHTML" data-card-form>
     {% csrf_token %}
     {% if form.non_field_errors %}
       <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
@@ -71,10 +74,7 @@
 
     <div class="toolbar" style="margin-top:8px">
       <button type="submit" class="btn">Создать заказ</button>
-      <button type="button" class="btn secondary"
-              onclick="document.getElementById('card-block').innerHTML='<div class=&quot;panel card-section muted&quot;>Выберите строку в таблице для просмотра карточки.</div>';">
-        Отмена
-      </button>
+      <button type="button" class="btn secondary" onclick="closeCardGuarded()">Отмена</button>
     </div>
   </form>
 </div>

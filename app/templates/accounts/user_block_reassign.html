@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Блокировка менеджера{% endblock %}
+{% block content %}
+<div class="panel card-section" style="max-width:600px">
+  <h3>Блокировка: {{ blocked_user.short_name|default:blocked_user.username }}</h3>
+  <p>Пользователь указан менеджером в <strong>{{ active_count }}</strong> незавершённых
+     {{ active_count|pluralize:"заказе,заказах" }}. Выберите менеджера, на которого
+     переназначить эти заказы. Завершённые заказы («Произведён»/«Отмена») не меняются.</p>
+  <form method="post" action="{% url 'accounts:user_toggle_block' blocked_user.pk %}">
+    {% csrf_token %}
+    <div class="field">
+      <label>Заменить менеджера на</label>
+      <select name="replacement_manager" class="input" required>
+        <option value="">— выберите менеджера —</option>
+        {% for m in managers %}<option value="{{ m.pk }}">{{ m.short_name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="toolbar">
+      <button class="btn danger" type="submit">Заблокировать и переназначить</button>
+      <a class="btn secondary" href="{% url 'accounts:user_list' %}">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

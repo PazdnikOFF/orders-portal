@@ -1,8 +1,11 @@
 <div class="panel card-section">
-  <h3>{{ order.order_code }} · <span class="status {{ order.status }}">{{ order.get_status_display }}</span></h3>
+  <div class="card-head">
+    <h3>{{ order.order_code }} · <span class="status {{ order.status }}">{{ order.get_status_display }}</span></h3>
+    <button type="button" class="btn ghost sm" onclick="closeCardGuarded()" title="Свернуть">✕ Свернуть</button>
+  </div>
 
   <form hx-post="{% url 'orders:update' order.pk %}" hx-target="#card-block" hx-swap="innerHTML"
-        data-status-form data-current-status="{{ order.status }}">
+        data-card-form data-status-form data-current-status="{{ order.status }}">
     {% csrf_token %}
     {% if form.non_field_errors %}
       <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
@@ -98,8 +101,10 @@
   {% include "files/_card_file.html" with order=order active_file=active_file %}
 </div>
 
-{# История изменений #}
+{# История изменений — недоступна роли «Менеджер» #}
+{% if not caps.is_manager %}
 <div class="panel card-section">
   <h3>История изменений</h3>
   {% include "orders/_history.html" with history=history order=order %}
 </div>
+{% endif %}

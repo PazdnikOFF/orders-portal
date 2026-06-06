@@ -15,9 +15,7 @@
   </label>
   <div class="spacer"></div>
   {% if caps.create_orders %}
-    <button class="btn" hx-get="{% url 'orders:new' %}" hx-target="#card-block" hx-swap="innerHTML">
-      + Добавить заказ
-    </button>
+    <button class="btn" type="button" onclick="openNewOrderRow()">+ Добавить заказ</button>
   {% endif %}
 </div>
 
@@ -76,7 +74,7 @@
         </th>
       </tr>
     </thead>
-    <tbody id="orders-tbody">
+    <tbody id="orders-tbody" data-selected="{{ selected_pk|default:'' }}">
       {% for order in orders %}
         {% include "orders/_table_row.html" %}
       {% empty %}
@@ -84,6 +82,8 @@
           {% if has_filters %}Ничего не найдено по заданным фильтрам{% else %}Записей нет{% endif %}
         </td></tr>
       {% endfor %}
+      {# Inline edit card — moved under the selected row / to the bottom (new). #}
+      <tr id="card-detail-row" hidden><td colspan="9" class="detail-cell"><div id="card-block"></div></td></tr>
     </tbody>
   </table>
 </div>
@@ -109,35 +109,5 @@
     <a class="btn secondary sm" href="{% query_replace page=paginator.num_pages %}">{{ paginator.num_pages }} »</a>
   {% endif %}
 </div>
-{% endif %}
-
-<!-- Bottom block / card (TЗ §9) — collapsible, hidden until a row is chosen -->
-<div class="card-block" id="card-wrap" x-data="{open:true}" @expand-card.window="open=true">
-  <div class="toolbar">
-    <strong>Карточка записи</strong>
-    <button class="btn ghost sm" @click="open=!open" x-text="open ? 'Свернуть ▲' : 'Развернуть ▼'"></button>
-  </div>
-  <div id="card-block" x-show="open" x-transition>
-    {% if selected_pk %}
-      {# Auto-open the just-created/selected order's card (incl. file upload). #}
-      <div hx-get="{% url 'orders:card' selected_pk %}" hx-trigger="load"
-           hx-target="#card-block" hx-swap="innerHTML">
-        <div class="panel card-section muted">Загрузка карточки…</div>
-      </div>
-    {% else %}
-      <div class="panel card-section muted">Выберите строку в таблице для просмотра карточки.</div>
-    {% endif %}
-  </div>
-</div>
-
-{% if selected_pk %}
-<div id="auto-select" data-pk="{{ selected_pk }}" hidden></div>
-<script>
-  (function () {
-    var pk = document.getElementById("auto-select").dataset.pk;
-    var row = document.getElementById("order-row-" + pk);
-    if (row) { row.classList.add("selected"); row.scrollIntoView({block: "center"}); }
-  })();
-</script>
 {% endif %}
 {% endblock %}

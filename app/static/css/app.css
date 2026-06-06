@@ -86,6 +86,13 @@ select.status-select{border-radius:12px;border:1px solid var(--border);padding:3
 .messages li.info{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
 .messages li.warning{background:#fffbeb;border-color:#fde68a;color:#92400e}
 
+/* Inline edit card (expanded under a table row) */
+#card-detail-row{cursor:default}
+#card-detail-row td.detail-cell{padding:10px;background:#e9eef5}
+.detail-cell .card-section{margin-bottom:10px}
+.detail-cell .card-section:last-child{margin-bottom:0}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+
 /* Bottom block (card) */
 .card-block{margin-top:16px}
 .card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
@@ -146,6 +153,7 @@ select.status-select{border-radius:12px;border:1px solid var(--border);padding:3
 .check-inline{display:inline-flex;align-items:center;gap:6px;font-weight:500;font-size:13px;margin:0;cursor:pointer}
 .saved-note{color:var(--ok);font-weight:600;font-size:13px}
 .pager{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.mgr-blocked{color:var(--danger);font-weight:700;cursor:help}
 
 /* History */
 .history{font-size:13px;max-height:280px;overflow:auto}

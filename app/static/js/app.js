@@ -1,4 +1,8 @@
-/* Portal front-end glue: CSRF for HTMX, idle-timeout redirect, Kanban DnD. */
+/* Portal front-end glue: CSRF for HTMX, idle-timeout redirect, Kanban DnD,
+   inline order card. */
+var _cardDirty = false;        // unsaved changes in the open inline card
+var _pendingAfterSave = null;  // action to run after a save we initiated
+
 (function () {
   "use strict";
 
@@ -48,12 +52,31 @@
   }
   document.addEventListener("DOMContentLoaded", dismissMessages);
 
-  // --- When a card loads into the bottom block, expand it and scroll to it ---
+  // --- Inline card: react to content swapped into #card-block --------------
   document.body.addEventListener("htmx:afterSwap", function (e) {
     var t = e.detail && e.detail.target;
-    if (t && t.id === "card-block") {
-      window.dispatchEvent(new CustomEvent("expand-card"));
-      try { t.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) {}
+    if (!t || t.id !== "card-block") return;
+    _cardDirty = false;                       // freshly loaded/saved -> clean
+    if (_pendingAfterSave) {                   // a save we initiated just finished
+      var fn = _pendingAfterSave; _pendingAfterSave = null; fn(); return;
+    }
+    try { t.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (_) {}
+  });
+
+  // --- Track unsaved changes in the open card ------------------------------
+  function _maybeDirty(e) {
+    if (e.target.closest && e.target.closest("[data-card-form]")) _cardDirty = true;
+  }
+  document.body.addEventListener("input", _maybeDirty);
+  document.body.addEventListener("change", _maybeDirty);
+
+  // --- On load: auto-open the selected order's inline card -----------------
+  document.addEventListener("DOMContentLoaded", function () {
+    var tbody = document.getElementById("orders-tbody");
+    var pk = tbody && tbody.dataset.selected;
+    if (pk) {
+      var row = document.getElementById("order-row-" + pk);
+      if (row) { loadOrderCard(row, pk); try { row.scrollIntoView({ block: "center" }); } catch (_) {} }
     }
   });
 
@@ -130,6 +153,78 @@
   });
 })();
 
+/* ===================== Inline order card (in the table) ===================== */
+function _detailRow() { return document.getElementById("card-detail-row"); }
+function _cardForm() { return document.querySelector("#card-block form[data-card-form]"); }
+
+function _highlightRow(pk) {
+  document.querySelectorAll(".order-row").forEach(function (r) { r.classList.remove("selected"); });
+  if (pk) { var r = document.getElementById("order-row-" + pk); if (r) r.classList.add("selected"); }
+}
+
+function collapseCard() {
+  var d = _detailRow();
+  if (d) { d.hidden = true; d.dataset.openPk = ""; }
+  var cb = document.getElementById("card-block");
+  if (cb) cb.innerHTML = "";
+  _cardDirty = false;
+  _highlightRow(null);
+}
+
+function loadOrderCard(rowEl, pk) {
+  var d = _detailRow();
+  if (!d || !rowEl) return;
+  rowEl.parentNode.insertBefore(d, rowEl.nextSibling);   // place under the row
+  d.hidden = false;
+  d.dataset.openPk = String(pk);
+  _cardDirty = false;
+  _highlightRow(pk);
+  if (window.htmx) htmx.ajax("GET", "/orders/" + pk + "/card/", { target: "#card-block", swap: "innerHTML" });
+}
+
+/* If the open card has unsaved changes, ask to save; then run `proceed`. */
+function guardUnsaved(proceed) {
+  if (!_cardDirty) { proceed(); return; }
+  if (window.confirm("Данные изменены. Сохранить перед закрытием?\n(ОК — сохранить, Отмена — закрыть без сохранения)")) {
+    _cardDirty = false;
+    var f = _cardForm();
+    if (f && (f.requestSubmit || f.submit)) {
+      _pendingAfterSave = proceed;                       // run after the save swaps in
+      if (f.requestSubmit) f.requestSubmit();
+      else f.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    } else { proceed(); }
+  } else {
+    _cardDirty = false;
+    proceed();
+  }
+}
+
+/* Row click: toggle the open card, or switch to another (guarding unsaved). */
+function onRowClick(rowEl, pk) {
+  var d = _detailRow();
+  var openPk = d ? d.dataset.openPk : "";
+  if (openPk === String(pk)) {
+    guardUnsaved(collapseCard);                          // re-click -> collapse
+  } else {
+    guardUnsaved(function () { loadOrderCard(rowEl, pk); });  // switch
+  }
+}
+
+function openNewOrderRow() {
+  guardUnsaved(function () {
+    var d = _detailRow(), tbody = document.getElementById("orders-tbody");
+    if (!d || !tbody) return;
+    tbody.appendChild(d);                                // to the bottom of the table
+    d.hidden = false;
+    d.dataset.openPk = "new";
+    _cardDirty = false;
+    _highlightRow(null);
+    if (window.htmx) htmx.ajax("GET", "/orders/new/", { target: "#card-block", swap: "innerHTML" });
+  });
+}
+
+function closeCardGuarded() { guardUnsaved(collapseCard); }
+
 /* Dynamic participant-INN rows. Plain JS so it works inside HTMX-swapped
    cards (no framework init needed). Each row is an <input name="participant_inns">;
    the server collects them via request.POST.getlist(). */
@@ -137,6 +232,10 @@
 function _portalCsrf() {
   var m = document.cookie.match(/(^|;)\s*csrftoken\s*=\s*([^;]+)/);
   return m ? decodeURIComponent(m[2]) : "";
+}
+
+function _markDirtyIfCard(el) {
+  if (el && el.closest && el.closest("[data-card-form]")) _cardDirty = true;
 }
 
 var _orgSearchTimers = new WeakMap();
@@ -207,6 +306,7 @@ function selectOrgOption(btn) {
   if (clear) clear.hidden = false;
   var opts = combo.querySelector(".org-options");
   if (opts) opts.innerHTML = "";
+  _markDirtyIfCard(combo);
 }
 
 /* Clear a single-field selection -> back to the INN search input. */
@@ -214,6 +314,7 @@ function orgComboClear(btn) {
   var combo = btn.closest("[data-org-combo]");
   if (!combo) return;
   _resetComboToSearch(combo);
+  _markDirtyIfCard(combo);
   var search = combo.querySelector(".org-search");
   if (search) search.focus();
 }
@@ -248,6 +349,7 @@ function addParticipantRow(btn) {
   var combo = row.querySelector("[data-org-combo]");
   if (combo) _resetComboToSearch(combo);
   rows.appendChild(row);
+  _markDirtyIfCard(wrap);
   var search = row.querySelector(".org-search");
   if (search) search.focus();
 }
@@ -257,6 +359,7 @@ function removeParticipantRow(btn) {
   var rows = wrap ? wrap.querySelector(".participant-rows") : null;
   var row = btn.closest(".participant-row");
   if (!rows || !row) return;
+  _markDirtyIfCard(wrap);
   if (rows.querySelectorAll(".participant-row").length <= 1) {
     var combo = row.querySelector("[data-org-combo]");
     if (combo) _resetComboToSearch(combo);   // keep at least one (empty) row

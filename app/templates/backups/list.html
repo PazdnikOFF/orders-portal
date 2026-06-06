@@ -18,14 +18,15 @@
     </thead>
     <tbody>
       {% for b in backups %}
-        <tr>
-          <td>{{ b.filename }}{% if not b.exists_on_disk %} <span class="muted">(файл отсутствует)</span>{% endif %}</td>
+        <tr {% if b.exists_on_disk %}style="cursor:pointer" title="Скачать резервную копию"
+            onclick="window.location='{% url 'backups:download' b.pk %}'"{% endif %}>
+          <td>{% if b.exists_on_disk %}⬇ {% endif %}{{ b.filename }}{% if not b.exists_on_disk %} <span class="muted">(файл отсутствует)</span>{% endif %}</td>
           <td>{{ b.get_kind_display }}</td>
           <td>{% if b.status == 'ok' %}<span class="status produced">{{ b.get_status_display }}</span>{% else %}<span class="status cancelled">{{ b.get_status_display }}</span>{% endif %}</td>
           <td>{{ b.size|filesizeformat }}</td>
           <td>{{ b.created_at|date:"d.m.Y H:i" }}</td>
           <td>{{ b.created_by.display_name|default:"система" }}</td>
-          <td class="row-actions">
+          <td class="row-actions" onclick="event.stopPropagation()">
             {% if b.status == 'ok' and b.exists_on_disk %}
               <form method="post" action="{% url 'backups:restore' b.pk %}" style="display:inline"
                     onsubmit="return confirm('Восстановить базу из {{ b.filename }}? Текущие данные будут заменены.');">

@@ -335,6 +335,8 @@ def order_status(request, pk):
 @login_required
 def order_history(request, pk):
     order = get_object_or_404(Order, pk=pk)
+    if request.user.is_manager:           # history is not available to managers
+        raise PermissionDenied
     if not can_view_order(request.user, order):
         raise PermissionDenied
     return render(request, "orders/_history.html",
