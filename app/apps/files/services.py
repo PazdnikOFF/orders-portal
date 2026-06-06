@@ -45,12 +45,12 @@ def save_order_file(request, order, uploaded) -> OrderFile:
     order_dir = settings.ORDER_FILES_ROOT / str(order.order_number)
     order_dir.mkdir(parents=True, exist_ok=True)
 
-    stored_name = f"{order.order_code}.{ext}"
+    stored_name = f"{order.file_code}.{ext}"
     abs_path = order_dir / stored_name
     # Avoid clobbering a previously detached file with the same target name.
     counter = 1
     while abs_path.exists():
-        stored_name = f"{order.order_code}-{counter}.{ext}"
+        stored_name = f"{order.file_code}-{counter}.{ext}"
         abs_path = order_dir / stored_name
         counter += 1
 

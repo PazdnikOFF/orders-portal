@@ -1,8 +1,8 @@
 <div data-participants>
   <div class="participant-rows">
-    {% for org in participant_values %}
+    {% for item in participant_values %}
       <div class="participant-row">
-        {% include "orders/_org_combo.html" with name="participant_orgs" value_org=org removable=True %}
+        {% include "orders/_org_combo.html" with name="participant_orgs" value_org=item.org display=item.display removable=True %}
       </div>
     {% empty %}
       <div class="participant-row">

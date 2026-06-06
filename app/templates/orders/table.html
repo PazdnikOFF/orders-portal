@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load order_extras %}
 {% block title %}Заказы — таблица{% endblock %}
 {% block content %}
 
@@ -21,22 +22,25 @@
 </div>
 
 {# Per-column filters submit this form; row status-selects are NOT associated. #}
-<form id="filters" method="get" action="{% url 'orders:table' %}"></form>
+<form id="filters" method="get" action="{% url 'orders:table' %}">
+  <input type="hidden" name="sort" value="{{ cur_sort }}">
+  <input type="hidden" name="dir" value="{{ cur_dir }}">
+</form>
 {% include "orders/_filter_datalists.html" %}
 
 <div class="panel" style="overflow:auto">
   <table class="grid">
     <thead>
       <tr>
-        <th>Менеджер</th>
-        <th>Дистрибьютор</th>
-        <th>Потенциальный пользователь</th>
+        <th><a class="sort-link" href="{% sort_url 'manager' %}">Менеджер{% sort_arrow 'manager' %}</a></th>
+        <th><a class="sort-link" href="{% sort_url 'distributor' %}">Дистрибьютор{% sort_arrow 'distributor' %}</a></th>
+        <th><a class="sort-link" href="{% sort_url 'potential' %}">Потенциальный пользователь{% sort_arrow 'potential' %}</a></th>
         <th>Участники проекта</th>
-        <th>Комплект</th>
-        <th>Дата обращения</th>
-        <th>Прогноз. дата</th>
-        <th>Номер заказа</th>
-        <th>Статус</th>
+        <th><a class="sort-link" href="{% sort_url 'kit' %}">Комплект{% sort_arrow 'kit' %}</a></th>
+        <th><a class="sort-link" href="{% sort_url 'request_date' %}">Дата обращения{% sort_arrow 'request_date' %}</a></th>
+        <th><a class="sort-link" href="{% sort_url 'forecast_date' %}">Прогноз. дата{% sort_arrow 'forecast_date' %}</a></th>
+        <th><a class="sort-link" href="{% sort_url 'number' %}">Номер заказа{% sort_arrow 'number' %}</a></th>
+        <th><a class="sort-link" href="{% sort_url 'status' %}">Статус{% sort_arrow 'status' %}</a></th>
       </tr>
       <tr class="filter-row">
         <th><input form="filters" name="f_manager" class="input" value="{{ request.GET.f_manager }}"

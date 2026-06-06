@@ -48,3 +48,8 @@ class Organization(models.Model):
         """Dropdown label — name + КПП so branches are distinguishable."""
         label = self.name or self.full_name or self.inn
         return f"{label} · КПП {self.kpp}" if self.kpp else label
+
+    @property
+    def rusprofile_url(self) -> str:
+        """Link to the company card on Rusprofile (search by INN)."""
+        return f"https://www.rusprofile.ru/search?query={self.inn}"

@@ -104,7 +104,6 @@ var _orgSearchTimers = new WeakMap();
 /* On input: if a full INN (10/12 digits) is typed, fetch matching orgs and
    show them in this row's dropdown. Plain fetch (no htmx) for reliability. */
 function orgSearchInput(input) {
-  orgComboInvalidate(input);                 // typed text invalidates any prior pick
   var combo = input.closest("[data-org-combo]");
   var opts = combo ? combo.querySelector(".org-options") : null;
   if (!opts) return;
@@ -135,41 +134,58 @@ function orgSearchInput(input) {
   }, 450));
 }
 
+/* Pick an org: switch the combo to the read-only «chip» state (link to
+   Rusprofile). Text can no longer be edited — only cleared/removed. */
 function selectOrgOption(btn) {
   var combo = btn.closest("[data-org-combo]");
   if (!combo) return;
+  var orgId = btn.dataset.orgId || "";
   var inn = btn.dataset.inn || "";
 
-  // Within participants, the same INN must not be added twice (branches with
-  // different КПП share the INN). Other fields may reuse the INN.
+  // Within participants the SAME organization (ИНН+КПП = id) must not repeat.
+  // Branches (same INN, different КПП) are different ids and are allowed.
   var participants = combo.closest("[data-participants]");
-  if (participants && inn) {
+  if (participants && orgId) {
     var duplicate = false;
-    participants.querySelectorAll("[data-org-combo]").forEach(function (c) {
-      if (c !== combo && c.dataset.inn === inn) duplicate = true;
+    participants.querySelectorAll("[data-org-combo] .org-id").forEach(function (h) {
+      if (h.closest("[data-org-combo]") !== combo && h.value === orgId) duplicate = true;
     });
-    if (duplicate) {
-      alert("Организация с ИНН " + inn + " уже добавлена в участники.");
-      return;
-    }
+    if (duplicate) { alert("Эта организация уже добавлена в участники."); return; }
   }
 
-  var id = combo.querySelector(".org-id");
-  var search = combo.querySelector(".org-search");
-  var opts = combo.querySelector(".org-options");
-  if (id) id.value = btn.dataset.orgId || "";
-  if (search) search.value = btn.dataset.display || "";   // «Наименование (ИНН)»
-  if (opts) opts.innerHTML = "";
+  combo.querySelector(".org-id").value = orgId;
   combo.dataset.inn = inn;
+  var link = combo.querySelector(".org-link");
+  if (link) {
+    link.textContent = btn.dataset.display || "";
+    link.setAttribute("href", "https://www.rusprofile.ru/search?query=" + encodeURIComponent(inn));
+    link.hidden = false;
+  }
+  var search = combo.querySelector(".org-search");
+  if (search) { search.value = ""; search.hidden = true; }
+  var clear = combo.querySelector(".org-clear");
+  if (clear) clear.hidden = false;
+  var opts = combo.querySelector(".org-options");
+  if (opts) opts.innerHTML = "";
 }
 
-function orgComboInvalidate(input) {
-  // The typed text no longer matches a confirmed selection.
-  var combo = input.closest("[data-org-combo]");
+/* Clear a single-field selection -> back to the INN search input. */
+function orgComboClear(btn) {
+  var combo = btn.closest("[data-org-combo]");
   if (!combo) return;
-  var id = combo.querySelector(".org-id");
-  if (id) id.value = "";
+  _resetComboToSearch(combo);
+  var search = combo.querySelector(".org-search");
+  if (search) search.focus();
+}
+
+function _resetComboToSearch(combo) {
+  combo.querySelector(".org-id").value = "";
   delete combo.dataset.inn;
+  var link = combo.querySelector(".org-link"); if (link) link.hidden = true;
+  var clear = combo.querySelector(".org-clear"); if (clear) clear.hidden = true;
+  var search = combo.querySelector(".org-search");
+  if (search) { search.hidden = false; search.value = ""; }
+  var opts = combo.querySelector(".org-options"); if (opts) opts.innerHTML = "";
 }
 
 function orgComboKeydown(e) {
@@ -181,13 +197,6 @@ function orgComboKeydown(e) {
   if (first) selectOrgOption(first);   // confirm the first match
 }
 
-function _clearCombo(scope) {
-  var id = scope.querySelector(".org-id"); if (id) id.value = "";
-  var search = scope.querySelector(".org-search"); if (search) search.value = "";
-  var opts = scope.querySelector(".org-options"); if (opts) opts.innerHTML = "";
-  var combo = scope.querySelector("[data-org-combo]"); if (combo) delete combo.dataset.inn;
-}
-
 /* Dynamic participant rows — each row is its own org combobox. */
 function addParticipantRow(btn) {
   var wrap = btn.closest("[data-participants]");
@@ -195,10 +204,10 @@ function addParticipantRow(btn) {
   var rows = wrap.querySelector(".participant-rows");
   var last = rows.querySelector(".participant-row:last-child");
   if (!last) return;
-  var row = last.cloneNode(true);          // keeps the hx-* combobox attributes
-  _clearCombo(row);
+  var row = last.cloneNode(true);
+  var combo = row.querySelector("[data-org-combo]");
+  if (combo) _resetComboToSearch(combo);
   rows.appendChild(row);
-  if (window.htmx) htmx.process(row);      // activate the search input on the new row
   var search = row.querySelector(".org-search");
   if (search) search.focus();
 }
@@ -209,7 +218,8 @@ function removeParticipantRow(btn) {
   var row = btn.closest(".participant-row");
   if (!rows || !row) return;
   if (rows.querySelectorAll(".participant-row").length <= 1) {
-    _clearCombo(row);                       // keep at least one (empty) row
+    var combo = row.querySelector("[data-org-combo]");
+    if (combo) _resetComboToSearch(combo);   // keep at least one (empty) row
   } else {
     row.remove();
   }

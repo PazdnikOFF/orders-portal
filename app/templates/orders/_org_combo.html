@@ -1,23 +1,30 @@
 {% comment %}
 Reusable organization combobox.
-Params: name (hidden field name), value_org (current Organization or None),
-disabled (bool), removable (bool — show ✕ for participant rows).
-Type an INN -> dropdown of matches (with КПП) -> pick -> shows «Наименование (ИНН)».
+Params: name (hidden field), value_org (Organization|None), disabled, removable
+(✕ removes a participant row), display (optional override of the shown text).
+
+Empty state  -> INN search input + dropdown.
+Selected     -> read-only «chip» linking to Rusprofile (text not editable);
+                ✕ clears (single field) or removes the row (participant).
 {% endcomment %}
 {% if disabled %}
-  <div class="readonly-value">{{ value_org.display_name|default:"—" }}</div>
+  <div class="readonly-value">{{ display|default:value_org.display_name|default:"—" }}</div>
 {% else %}
-  <div class="org-combo" data-org-combo {% if value_org %}data-inn="{{ value_org.inn }}"{% endif %}>
-    <div class="prow-line">
-      <input type="text" class="input org-search" autocomplete="off"
-             placeholder="Введите ИНН…"
-             value="{{ value_org.display_name|default:'' }}"
+  <div class="org-combo" data-org-combo data-inn="{{ value_org.inn|default:'' }}">
+    <input type="hidden" name="{{ name }}" class="org-id" value="{{ value_org.pk|default:'' }}">
+    <div class="org-line">
+      <a class="org-link"{% if not value_org %} hidden{% endif %} target="_blank" rel="noopener"
+         href="{{ value_org.rusprofile_url|default:'#' }}">{{ display|default:value_org.display_name }}</a>
+      <input type="text" class="input org-search"{% if value_org %} hidden{% endif %}
+             autocomplete="off" placeholder="Введите ИНН…"
              oninput="orgSearchInput(this)" onkeydown="orgComboKeydown(event)">
       {% if removable %}
         <button type="button" class="btn secondary sm" onclick="removeParticipantRow(this)" title="Убрать">✕</button>
+      {% else %}
+        <button type="button" class="btn secondary sm org-clear"{% if not value_org %} hidden{% endif %}
+                onclick="orgComboClear(this)" title="Изменить">✕</button>
       {% endif %}
     </div>
-    <input type="hidden" name="{{ name }}" class="org-id" value="{{ value_org.pk|default:'' }}">
     <div class="org-options"></div>
   </div>
 {% endif %}

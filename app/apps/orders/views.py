@@ -24,15 +24,21 @@ from .services import (
 )
 
 SORT_FIELDS = {
-    "number": "order_number",
+    "manager": "manager__last_name",
+    "distributor": "distributor__name",
+    "potential": "potential_user__name",
+    "kit": "kit",
     "request_date": "request_date",
     "forecast_date": "forecast_date",
+    "number": "order_number",
     "status": "status",
 }
+DEFAULT_SORT = "request_date"
 
 
 def _participant_orgs(order: Order) -> list:
-    return list(order.participants.all())
+    # [{"org": Organization, "display": "Наименование (ИНН[, КПП])"}]
+    return order.participants_display()
 
 
 def _order_form_initial(order: Order) -> dict:
@@ -117,10 +123,11 @@ def _filtered_orders(request):
     if needs_distinct:
         qs = qs.distinct()
 
-    sort = g.get("sort", "number")
-    field = SORT_FIELDS.get(sort, "order_number")
+    sort = g.get("sort", DEFAULT_SORT)
+    field = SORT_FIELDS.get(sort, SORT_FIELDS[DEFAULT_SORT])
     direction = "-" if g.get("dir", "desc") == "desc" else ""
-    return qs.order_by(f"{direction}{field}")
+    # Stable secondary ordering so equal keys keep a consistent order.
+    return qs.order_by(f"{direction}{field}", "-order_number")
 
 
 # --------------------------------------------------------------------------- #
@@ -140,6 +147,8 @@ def table(request):
         "has_filters": any(request.GET.get(k) for k in filter_keys),
         "show_done": request.GET.get("show_done") == "1",
         "selected_pk": selected_pk,
+        "cur_sort": request.GET.get("sort", DEFAULT_SORT),
+        "cur_dir": "desc" if request.GET.get("dir", "desc") == "desc" else "asc",
         "view": "table",
         **_filter_options(),
     }
@@ -218,9 +227,9 @@ def order_new(request):
                 resp["HX-Redirect"] = f"/orders/?selected={order.pk}"
                 return resp
         # Re-render keeping the participant orgs the user already chose.
-        chosen = Organization.objects.filter(pk__in=request.POST.getlist("participant_orgs"))
+        chosen = list(Organization.objects.filter(pk__in=request.POST.getlist("participant_orgs")))
         return render(request, "orders/_card_new.html",
-                      {"form": form, "participant_values": list(chosen)})
+                      {"form": form, "participant_values": Order.org_display_list(chosen)})
     form = OrderForm(user=request.user, stage=matrix.STAGE_CREATE, is_create=True,
                      initial={"status": Status.PLANNED})
     return render(request, "orders/_card_new.html", {"form": form, "participant_values": []})
@@ -252,12 +261,14 @@ def order_update(request, pk):
     if not saved:
         return HttpResponse(card_html)
     # On success, also refresh the matching table row in place (HTMX OOB swap).
+    # The <tr> must be wrapped in <template> or the browser drops it while
+    # parsing the response (a bare <tr> can't live outside a table).
     row_html = render_to_string(
         "orders/_table_row.html",
         {"order": order, "statuses": Status.choices, "oob": True},
         request=request,
     )
-    return HttpResponse(card_html + row_html)
+    return HttpResponse(card_html + "<template>" + row_html + "</template>")
 
 
 # --------------------------------------------------------------------------- #

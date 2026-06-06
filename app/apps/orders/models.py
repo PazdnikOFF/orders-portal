@@ -109,8 +109,37 @@ class Order(models.Model):
 
     @property
     def order_code(self) -> str:
-        """Human/file-name form of the order number, e.g. ORD-000001."""
-        return f"ORD-{self.order_number:06d}"
+        """Human-readable order number, e.g. РЭ-000001."""
+        return f"РЭ-{self.order_number:06d}"
+
+    @property
+    def file_code(self) -> str:
+        """ASCII form used for on-disk file names (avoids Cyrillic filenames)."""
+        return f"RE-{self.order_number:06d}"
+
+    @staticmethod
+    def org_display_list(orgs):
+        """
+        Build display strings for a set of organizations. If the same INN occurs
+        more than once (different КПП — branches), the КПП is appended so the
+        rows are distinguishable; otherwise «Наименование (ИНН)» (amendment §8).
+        """
+        orgs = list(orgs)
+        inn_counts = {}
+        for o in orgs:
+            inn_counts[o.inn] = inn_counts.get(o.inn, 0) + 1
+        result = []
+        for o in orgs:
+            label = o.name or o.full_name or "—"
+            if inn_counts[o.inn] > 1 and o.kpp:
+                text = f"{label} ({o.inn}, КПП {o.kpp})"
+            else:
+                text = f"{label} ({o.inn})"
+            result.append({"org": o, "display": text})
+        return result
+
+    def participants_display(self):
+        return self.org_display_list(self.participants.all())
 
     @property
     def forecast_urgency(self) -> str:

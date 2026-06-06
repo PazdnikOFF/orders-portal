@@ -81,27 +81,22 @@ class OrderForm(forms.Form):
         if self.is_create and not cleaned.get("participant_orgs"):
             self.add_error("participant_orgs", "Добавьте хотя бы одну организацию-участника.")
 
-        # The same INN must not repeat among the participants of one order
-        # (branches with different КПП count as the same INN here). Sharing an
-        # INN with the distributor / potential user is allowed.
+        # The same organization (ИНН + КПП) must not repeat among participants.
+        # Branches (same INN, different КПП) are different organizations and are
+        # allowed. Sharing with the distributor / potential user is allowed too.
         if not self.fields["participant_orgs"].disabled and hasattr(self.data, "getlist"):
             raw_ids = [v for v in self.data.getlist("participant_orgs") if v]
-            if raw_ids:
-                inn_by_id = dict(
-                    Organization.objects.filter(pk__in=raw_ids).values_list("pk", "inn")
+            seen, dups = set(), set()
+            for rid in raw_ids:
+                if rid in seen:
+                    dups.add(rid)
+                seen.add(rid)
+            if dups:
+                names = ", ".join(
+                    o.display_name for o in Organization.objects.filter(pk__in=dups)
                 )
-                seen, dups = set(), set()
-                for rid in raw_ids:
-                    inn = inn_by_id.get(int(rid)) if rid.isdigit() else None
-                    if inn is None:
-                        continue
-                    if inn in seen:
-                        dups.add(inn)
-                    seen.add(inn)
-                if dups:
-                    self.add_error(
-                        "participant_orgs",
-                        "Один и тот же ИНН нельзя добавить в участники несколько раз: "
-                        + ", ".join(sorted(dups)) + ".",
-                    )
+                self.add_error(
+                    "participant_orgs",
+                    f"Эту организацию нельзя добавить в участники несколько раз: {names}.",
+                )
         return cleaned
