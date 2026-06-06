@@ -87,6 +87,7 @@
       {% endif %}
       <button type="button" class="btn secondary" hx-get="{% url 'orders:card' order.pk %}"
               hx-target="#card-block" hx-swap="innerHTML">Отменить изменения</button>
+      {% if saved %}<span class="saved-note">✓ Сохранено</span>{% endif %}
     </div>
   </form>
 </div>

@@ -135,6 +135,7 @@ select.status-select{border-radius:12px;border:1px solid var(--border);padding:3
 .kanban-filters .input{max-width:190px}
 .kanban-filters input[type=date].input{max-width:150px}
 .check-inline{display:inline-flex;align-items:center;gap:6px;font-weight:500;font-size:13px;margin:0;cursor:pointer}
+.saved-note{color:var(--ok);font-weight:600;font-size:13px}
 
 /* History */
 .history{font-size:13px;max-height:280px;overflow:auto}

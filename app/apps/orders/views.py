@@ -5,6 +5,7 @@ from django.db.models import Q, Value
 from django.db.models.functions import Concat
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.template.loader import render_to_string
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_http_methods
 
@@ -233,17 +234,30 @@ def order_update(request, pk):
         raise PermissionDenied
     form = OrderForm(request.POST, user=request.user, stage=order.stage,
                      initial=_order_form_initial(order))
+    saved = False
     if form.is_valid():
         try:
             update_order(request, order, form.cleaned_data)
         except (PermissionDenied, ValidationError) as exc:
             form.add_error(None, getattr(exc, "messages", [str(exc)]))
         else:
-            messages.success(request, f"Заказ {order.order_code} сохранён.")
             order.refresh_from_db()
             form = OrderForm(user=request.user, stage=order.stage,
                              initial=_order_form_initial(order))
-    return render(request, "orders/_card.html", _card_context(request, order, form))
+            saved = True
+
+    context = _card_context(request, order, form)
+    context["saved"] = saved
+    card_html = render_to_string("orders/_card.html", context, request=request)
+    if not saved:
+        return HttpResponse(card_html)
+    # On success, also refresh the matching table row in place (HTMX OOB swap).
+    row_html = render_to_string(
+        "orders/_table_row.html",
+        {"order": order, "statuses": Status.choices, "oob": True},
+        request=request,
+    )
+    return HttpResponse(card_html + row_html)
 
 
 # --------------------------------------------------------------------------- #
