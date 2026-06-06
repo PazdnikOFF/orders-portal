@@ -16,11 +16,11 @@
 </div>
 
 <form method="get" action="{% url 'orders:kanban' %}" class="toolbar kanban-filters">
-  <input class="input" name="f_manager" value="{{ request.GET.f_manager }}"
+  <input class="input" name="f_manager" value="{{ request.GET.f_manager }}" list="dl-managers"
          placeholder="Менеджер" onchange="this.form.submit()">
-  <input class="input" name="f_distributor" value="{{ request.GET.f_distributor }}"
+  <input class="input" name="f_distributor" value="{{ request.GET.f_distributor }}" list="dl-orgs"
          placeholder="Дистрибьютор (назв./ИНН)" onchange="this.form.submit()">
-  <input class="input" name="f_potential" value="{{ request.GET.f_potential }}"
+  <input class="input" name="f_potential" value="{{ request.GET.f_potential }}" list="dl-orgs"
          placeholder="Пользователь (назв./ИНН)" onchange="this.form.submit()">
   <span class="muted">Реализация:</span>
   <input class="input" type="date" name="f_forecast_from" value="{{ request.GET.f_forecast_from }}"
@@ -34,6 +34,7 @@
   </label>
   <button class="btn secondary sm" type="submit">Применить</button>
 </form>
+{% include "orders/_filter_datalists.html" %}
 
 <div class="kanban" style="grid-template-columns:repeat({{ col_count }},minmax(0,1fr))">
   {% for col in columns %}

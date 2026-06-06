@@ -22,6 +22,7 @@
 
 {# Per-column filters submit this form; row status-selects are NOT associated. #}
 <form id="filters" method="get" action="{% url 'orders:table' %}"></form>
+{% include "orders/_filter_datalists.html" %}
 
 <div class="panel" style="overflow:auto">
   <table class="grid">
@@ -39,19 +40,25 @@
       </tr>
       <tr class="filter-row">
         <th><input form="filters" name="f_manager" class="input" value="{{ request.GET.f_manager }}"
-                   placeholder="фильтр…" onchange="this.form.submit()"></th>
+                   list="dl-managers" placeholder="фильтр…" onchange="this.form.submit()"></th>
         <th><input form="filters" name="f_distributor" class="input" value="{{ request.GET.f_distributor }}"
-                   placeholder="назв./ИНН" onchange="this.form.submit()"></th>
+                   list="dl-orgs" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
         <th><input form="filters" name="f_potential" class="input" value="{{ request.GET.f_potential }}"
-                   placeholder="назв./ИНН" onchange="this.form.submit()"></th>
+                   list="dl-orgs" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
         <th><input form="filters" name="f_participant" class="input" value="{{ request.GET.f_participant }}"
-                   placeholder="назв./ИНН" onchange="this.form.submit()"></th>
+                   list="dl-orgs" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
         <th><input form="filters" name="f_kit" class="input" value="{{ request.GET.f_kit }}"
                    placeholder="фильтр…" onchange="this.form.submit()"></th>
         <th><input form="filters" name="f_request_date" type="date" class="input"
                    value="{{ request.GET.f_request_date }}" onchange="this.form.submit()"></th>
-        <th><input form="filters" name="f_forecast_date" type="date" class="input"
-                   value="{{ request.GET.f_forecast_date }}" onchange="this.form.submit()"></th>
+        <th>
+          <div class="date-range">
+            <input form="filters" name="f_forecast_from" type="date" class="input" title="с"
+                   value="{{ request.GET.f_forecast_from }}" onchange="this.form.submit()">
+            <input form="filters" name="f_forecast_to" type="date" class="input" title="по"
+                   value="{{ request.GET.f_forecast_to }}" onchange="this.form.submit()">
+          </div>
+        </th>
         <th><input form="filters" name="f_number" class="input" value="{{ request.GET.f_number }}"
                    inputmode="numeric" placeholder="№" onchange="this.form.submit()"></th>
         <th>

@@ -68,6 +68,7 @@ table.grid tbody tr.order-row.selected td{background:#cfe0fb}
 table.grid thead tr.filter-row th{background:#f6f8fb;padding:4px 6px}
 table.grid thead tr.filter-row .input{padding:4px 7px;font-size:12px;font-weight:400;
   text-transform:none;letter-spacing:0;color:var(--text)}
+.date-range{display:flex;flex-direction:column;gap:3px}
 
 /* Status pill / select */
 .status{display:inline-block;padding:3px 9px;border-radius:12px;color:#fff;font-size:12px;font-weight:600}

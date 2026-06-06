@@ -22,7 +22,6 @@
     <nav>
       <a href="{% url 'orders:table' %}" class="{% if request.resolver_match.url_name == 'table' %}active{% endif %}">Таблица</a>
       <a href="{% url 'orders:kanban' %}" class="{% if request.resolver_match.url_name == 'kanban' %}active{% endif %}">Kanban</a>
-      <a href="{% url 'directories:employee_list' %}">Сотрудники</a>
       {% if caps.manage_users %}
         <a href="{% url 'accounts:user_list' %}">Пользователи</a>
         <a href="{% url 'audit:log' %}">Журнал</a>

@@ -10,15 +10,14 @@
 <div class="panel" style="overflow:auto">
   <table class="grid">
     <thead>
-      <tr><th>Логин</th><th>ФИО</th><th>Роль</th><th>Сотрудник</th><th>Статус</th><th>Последний вход</th><th></th></tr>
+      <tr><th>Логин</th><th>ФИО</th><th>Роль</th><th>Статус</th><th>Последний вход</th><th></th></tr>
     </thead>
     <tbody>
       {% for u in users %}
         <tr>
           <td>{{ u.username }}</td>
-          <td>{{ u.full_name|default:"—" }}</td>
+          <td>{{ u.fio }}</td>
           <td>{{ u.get_role_display }}</td>
-          <td>{{ u.employee.short_name|default:"—" }}</td>
           <td>{% if u.is_active %}<span class="status produced">активен</span>{% else %}<span class="status cancelled">заблокирован</span>{% endif %}</td>
           <td>{{ u.last_login|date:"d.m.Y H:i"|default:"—" }}</td>
           <td class="row-actions">

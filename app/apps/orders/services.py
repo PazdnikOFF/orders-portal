@@ -21,15 +21,13 @@ def visible_orders(user) -> QuerySet[Order]:
     ).prefetch_related("participants", "files")
 
     if user.sees_only_own_orders:
-        if user.employee_id:
-            return qs.filter(manager_id=user.employee_id)
-        return qs.none()
+        return qs.filter(manager_id=user.id)
     return qs
 
 
 def can_view_order(user, order: Order) -> bool:
     if user.sees_only_own_orders:
-        return bool(user.employee_id) and order.manager_id == user.employee_id
+        return order.manager_id == user.id
     return True
 
 

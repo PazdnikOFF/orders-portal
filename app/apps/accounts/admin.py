@@ -6,17 +6,17 @@ from .models import User
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
-    list_display = ("username", "full_name", "role", "is_active", "last_login")
+    list_display = ("username", "last_name", "first_name", "role", "is_active", "last_login")
     list_filter = ("role", "is_active")
-    search_fields = ("username", "full_name")
+    search_fields = ("username", "last_name", "first_name", "middle_name")
     fieldsets = (
         (None, {"fields": ("username", "password")}),
-        ("Профиль", {"fields": ("full_name", "role", "employee", "is_active")}),
+        ("Профиль", {"fields": ("last_name", "first_name", "middle_name", "role", "is_active")}),
         ("Системное", {"fields": ("last_login", "date_joined", "is_staff", "is_superuser")}),
     )
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("username", "full_name", "role", "password1", "password2"),
+            "fields": ("username", "last_name", "first_name", "middle_name", "role", "password1", "password2"),
         }),
     )

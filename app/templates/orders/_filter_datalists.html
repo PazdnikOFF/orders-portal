@@ -1,0 +1,7 @@
+{# Smart-substitution suggestions for filter inputs (from the reference data). #}
+<datalist id="dl-managers">
+  {% for m in manager_options %}<option value="{{ m.short_name }}"></option>{% endfor %}
+</datalist>
+<datalist id="dl-orgs">
+  {% for name in org_options %}<option value="{{ name }}"></option>{% endfor %}
+</datalist>

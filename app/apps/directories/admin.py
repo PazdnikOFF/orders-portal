@@ -1,13 +1,6 @@
 from django.contrib import admin
 
-from .models import Employee, Organization
-
-
-@admin.register(Employee)
-class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ("short_name", "type", "is_active")
-    list_filter = ("type", "is_active")
-    search_fields = ("last_name", "first_name", "middle_name")
+from .models import Organization
 
 
 @admin.register(Organization)

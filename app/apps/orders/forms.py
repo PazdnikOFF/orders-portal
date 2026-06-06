@@ -6,7 +6,8 @@ the stage/role matrix — non-editable fields are rendered read-only.
 """
 from django import forms
 
-from apps.directories.models import Employee, EmployeeType, Organization
+from apps.accounts.models import Role, User
+from apps.directories.models import Organization
 
 from . import matrix
 from .models import Status
@@ -15,7 +16,7 @@ from .models import Status
 class OrderForm(forms.Form):
     manager = forms.ModelChoiceField(
         label="Менеджер",
-        queryset=Employee.objects.filter(type=EmployeeType.MANAGER, is_active=True),
+        queryset=User.objects.filter(role=Role.MANAGER, is_active=True),
         widget=forms.Select(attrs={"class": "input"}),
         empty_label="— выберите менеджера —",
     )

@@ -30,12 +30,13 @@ class UserCreateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["username", "full_name", "role", "employee", "is_active"]
+        fields = ["username", "last_name", "first_name", "middle_name", "role", "is_active"]
         widgets = {
             "username": forms.TextInput(attrs={"class": "input"}),
-            "full_name": forms.TextInput(attrs={"class": "input"}),
+            "last_name": forms.TextInput(attrs={"class": "input"}),
+            "first_name": forms.TextInput(attrs={"class": "input"}),
+            "middle_name": forms.TextInput(attrs={"class": "input"}),
             "role": forms.Select(attrs={"class": "input"}),
-            "employee": forms.Select(attrs={"class": "input"}),
         }
 
     def clean_password2(self):
@@ -70,11 +71,12 @@ class UserEditForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["full_name", "role", "employee", "is_active"]
+        fields = ["last_name", "first_name", "middle_name", "role", "is_active"]
         widgets = {
-            "full_name": forms.TextInput(attrs={"class": "input"}),
+            "last_name": forms.TextInput(attrs={"class": "input"}),
+            "first_name": forms.TextInput(attrs={"class": "input"}),
+            "middle_name": forms.TextInput(attrs={"class": "input"}),
             "role": forms.Select(attrs={"class": "input"}),
-            "employee": forms.Select(attrs={"class": "input"}),
         }
 
     def clean(self):

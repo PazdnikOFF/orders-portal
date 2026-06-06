@@ -55,7 +55,7 @@ class OrderSequence(models.Model):
 
 class Order(models.Model):
     manager = models.ForeignKey(
-        "directories.Employee", on_delete=models.PROTECT,
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
         related_name="managed_orders", verbose_name="Менеджер",
     )
     distributor = models.ForeignKey(

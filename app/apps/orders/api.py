@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from django.core.exceptions import PermissionDenied, ValidationError
 
-from apps.directories.models import Employee, EmployeeType
+from apps.accounts.models import Role, User
 from apps.directories.services import upsert_organization
 from apps.integrations.providers import OrgLookupError
 
@@ -60,7 +60,7 @@ class OrderReadSerializer(serializers.ModelSerializer):
 
 class OrderWriteSerializer(serializers.Serializer):
     manager = serializers.PrimaryKeyRelatedField(
-        queryset=Employee.objects.filter(type=EmployeeType.MANAGER, is_active=True)
+        queryset=User.objects.filter(role=Role.MANAGER, is_active=True)
     )
     distributor_inn = serializers.CharField(max_length=12)
     potential_user_inn = serializers.CharField(max_length=12)

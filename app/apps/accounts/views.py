@@ -42,7 +42,7 @@ def logout_view(request):
 @login_required
 @role_required("can_manage_users")
 def user_list(request):
-    users = User.objects.all().order_by("full_name", "username")
+    users = User.objects.all().order_by("last_name", "first_name", "username")
     return render(request, "accounts/user_list.html", {"users": users})
 
 

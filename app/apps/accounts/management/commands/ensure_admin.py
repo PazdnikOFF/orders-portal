@@ -12,7 +12,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         username = os.environ.get("ADMIN_USERNAME", "admin")
         password = os.environ.get("ADMIN_PASSWORD", "")
-        full_name = os.environ.get("ADMIN_FULL_NAME", "Администратор")
+        last_name = os.environ.get("ADMIN_FULL_NAME", "Администратор")
 
         if User.objects.filter(username=username).exists():
             self.stdout.write(self.style.NOTICE(f"Пользователь «{username}» уже существует — пропуск."))
@@ -25,7 +25,7 @@ class Command(BaseCommand):
             return
 
         user = User.objects.create_user(
-            username=username, password=password, full_name=full_name, role=Role.ADMIN,
+            username=username, password=password, last_name=last_name, role=Role.ADMIN,
             is_active=True,
         )
         self.stdout.write(self.style.SUCCESS(f"Создан администратор «{user.username}»."))

@@ -25,15 +25,11 @@ class User(AbstractUser):
     The role drives every server-side permission check.
     """
 
-    full_name = models.CharField("ФИО", max_length=255, blank=True)
+    # The user IS the employee (merged entity): name + role live here, and a
+    # role=MANAGER user is what gets assigned to orders as «Менеджер».
+    middle_name = models.CharField("Отчество", max_length=150, blank=True)
     role = models.CharField(
         "Роль", max_length=16, choices=Role.choices, default=Role.OPERATOR
-    )
-    # Links a Manager/Operator user to their entry in the employee directory.
-    # Used so a Manager sees only orders where he is the assigned «Менеджер».
-    employee = models.ForeignKey(
-        "directories.Employee", null=True, blank=True, on_delete=models.SET_NULL,
-        related_name="user_accounts", verbose_name="Сотрудник (профиль)",
     )
 
     objects = UserManager()
@@ -41,7 +37,7 @@ class User(AbstractUser):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
-        ordering = ["full_name", "username"]
+        ordering = ["last_name", "first_name", "username"]
 
     def __str__(self):
         return self.display_name
@@ -56,8 +52,17 @@ class User(AbstractUser):
         super().save(*args, **kwargs)
 
     @property
+    def short_name(self) -> str:
+        """«Фамилия Имя» — display used in lists and the manager dropdown."""
+        return f"{self.last_name} {self.first_name}".strip() or self.username
+
+    @property
     def display_name(self) -> str:
-        return self.full_name or self.get_full_name() or self.username
+        return self.short_name
+
+    @property
+    def fio(self) -> str:
+        return f"{self.last_name} {self.first_name} {self.middle_name}".strip() or self.username
 
     # --- Role predicates ---------------------------------------------------- #
     @property

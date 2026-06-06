@@ -1,12 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Q
+from django.db.models import Q, Value
+from django.db.models.functions import Concat
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_http_methods
 
+from apps.accounts.models import Role, User
 from apps.directories.models import Organization
 
 from . import matrix
@@ -51,7 +53,13 @@ def _apply_common_filters(request, qs):
     """Filters shared by table and Kanban: manager, distributor, user, date range."""
     g = request.GET
     if v := g.get("f_manager", "").strip():
-        qs = qs.filter(Q(manager__last_name__icontains=v) | Q(manager__first_name__icontains=v))
+        qs = qs.annotate(
+            _mgr_name=Concat("manager__last_name", Value(" "), "manager__first_name")
+        ).filter(
+            Q(_mgr_name__icontains=v)
+            | Q(manager__last_name__icontains=v)
+            | Q(manager__first_name__icontains=v)
+        )
     if v := g.get("f_distributor", "").strip():
         qs = qs.filter(Q(distributor__name__icontains=v) | Q(distributor__inn__icontains=v))
     if v := g.get("f_potential", "").strip():
@@ -61,6 +69,18 @@ def _apply_common_filters(request, qs):
     if v := parse_date(g.get("f_forecast_to", "")):
         qs = qs.filter(forecast_date__lte=v)
     return qs
+
+
+def _filter_options() -> dict:
+    """Datalist suggestions for filter inputs (smart substitution from refs)."""
+    managers = User.objects.filter(role=Role.MANAGER, is_active=True).order_by(
+        "last_name", "first_name"
+    )
+    org_names = list(
+        Organization.objects.exclude(name="").order_by("name")
+        .values_list("name", flat=True).distinct()
+    )
+    return {"manager_options": managers, "org_options": org_names}
 
 
 def _hide_done(request, qs):
@@ -85,8 +105,8 @@ def _filtered_orders(request):
         qs = qs.filter(kit__icontains=v)
     if v := parse_date(g.get("f_request_date", "")):
         qs = qs.filter(request_date=v)
-    if v := parse_date(g.get("f_forecast_date", "")):
-        qs = qs.filter(forecast_date=v)
+    # Forecast date is a range (f_forecast_from / f_forecast_to) handled in
+    # _apply_common_filters, shared with Kanban.
     if v := "".join(ch for ch in g.get("f_number", "") if ch.isdigit()):
         qs = qs.filter(order_number=int(v))
     if (v := g.get("f_status", "")) in Status.values:
@@ -120,6 +140,7 @@ def table(request):
         "show_done": request.GET.get("show_done") == "1",
         "selected_pk": selected_pk,
         "view": "table",
+        **_filter_options(),
     }
     return render(request, "orders/table.html", context)
 
@@ -145,6 +166,7 @@ def kanban(request):
         "show_done": show_done,
         "has_filters": any(request.GET.get(k) for k in filter_keys),
         "view": "kanban",
+        **_filter_options(),
     }
     return render(request, "orders/kanban.html", context)
 
