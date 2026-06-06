@@ -8,13 +8,13 @@ Selected     -> read-only «chip» linking to Rusprofile (text not editable);
                 ✕ clears (single field) or removes the row (participant).
 {% endcomment %}
 {% if disabled %}
-  <div class="readonly-value">{{ display|default:value_org.display_name|default:"—" }}</div>
+  <div class="readonly-value">{% if display %}{{ display }}{% elif value_org %}{{ value_org.display_name }}{% else %}—{% endif %}</div>
 {% else %}
   <div class="org-combo" data-org-combo data-inn="{{ value_org.inn|default:'' }}">
     <input type="hidden" name="{{ name }}" class="org-id" value="{{ value_org.pk|default:'' }}">
     <div class="org-line">
       <a class="org-link"{% if not value_org %} hidden{% endif %} target="_blank" rel="noopener"
-         href="{{ value_org.rusprofile_url|default:'#' }}">{{ display|default:value_org.display_name }}</a>
+         href="{{ value_org.rusprofile_url|default:'#' }}">{% if display %}{{ display }}{% elif value_org %}{{ value_org.display_name }}{% endif %}</a>
       <input type="text" class="input org-search"{% if value_org %} hidden{% endif %}
              autocomplete="off" placeholder="Введите ИНН…"
              oninput="orgSearchInput(this)" onkeydown="orgComboKeydown(event)">
