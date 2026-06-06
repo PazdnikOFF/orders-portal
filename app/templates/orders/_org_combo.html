@@ -12,11 +12,7 @@ Type an INN -> dropdown of matches (with КПП) -> pick -> shows «Наимен
       <input type="text" class="input org-search" autocomplete="off"
              placeholder="Введите ИНН…"
              value="{{ value_org.display_name|default:'' }}"
-             hx-post="{% url 'directories:org_suggest' %}"
-             hx-trigger="keyup[event.target.value.length==10||event.target.value.length==12] changed delay:500ms"
-             hx-vals='js:{inn: event.target.value}'
-             hx-target="next .org-options" hx-swap="innerHTML"
-             oninput="orgComboInvalidate(this)" onkeydown="orgComboKeydown(event)">
+             oninput="orgSearchInput(this)" onkeydown="orgComboKeydown(event)">
       {% if removable %}
         <button type="button" class="btn secondary sm" onclick="removeParticipantRow(this)" title="Убрать">✕</button>
       {% endif %}

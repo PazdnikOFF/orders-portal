@@ -82,6 +82,47 @@
    cards (no framework init needed). Each row is an <input name="participant_inns">;
    the server collects them via request.POST.getlist(). */
 /* Organization combobox: type INN -> dropdown of matches (with КПП) -> pick. */
+function _portalCsrf() {
+  var m = document.cookie.match(/(^|;)\s*csrftoken\s*=\s*([^;]+)/);
+  return m ? decodeURIComponent(m[2]) : "";
+}
+
+var _orgSearchTimers = new WeakMap();
+
+/* On input: if a full INN (10/12 digits) is typed, fetch matching orgs and
+   show them in this row's dropdown. Plain fetch (no htmx) for reliability. */
+function orgSearchInput(input) {
+  orgComboInvalidate(input);                 // typed text invalidates any prior pick
+  var combo = input.closest("[data-org-combo]");
+  var opts = combo ? combo.querySelector(".org-options") : null;
+  if (!opts) return;
+
+  var digits = (input.value.match(/\d/g) || []).join("");
+  var prev = _orgSearchTimers.get(input);
+  if (prev) clearTimeout(prev);
+
+  if (digits.length !== 10 && digits.length !== 12) {
+    opts.innerHTML = "";
+    return;
+  }
+  _orgSearchTimers.set(input, setTimeout(function () {
+    opts.innerHTML = '<div class="org-option-msg muted">Поиск…</div>';
+    fetch("/directories/org-suggest/", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": _portalCsrf(),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "inn=" + encodeURIComponent(digits),
+    })
+      .then(function (r) { return r.text(); })
+      .then(function (html) { opts.innerHTML = html; })
+      .catch(function () {
+        opts.innerHTML = '<div class="org-option-msg err">Ошибка поиска организации</div>';
+      });
+  }, 450));
+}
+
 function selectOrgOption(btn) {
   var combo = btn.closest("[data-org-combo]");
   if (!combo) return;
@@ -103,8 +144,10 @@ function orgComboInvalidate(input) {
 function orgComboKeydown(e) {
   if (e.key !== "Enter") return;
   var combo = e.target.closest("[data-org-combo]");
-  var first = combo ? combo.querySelector(".org-options .org-option") : null;
-  if (first) { e.preventDefault(); selectOrgOption(first); }  // confirm first match
+  if (!combo) return;
+  e.preventDefault();   // never submit the form from the search field on Enter
+  var first = combo.querySelector(".org-options .org-option");
+  if (first) selectOrgOption(first);   // confirm the first match
 }
 
 function _clearCombo(scope) {

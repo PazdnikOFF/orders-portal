@@ -13,6 +13,15 @@ from . import matrix
 from .models import Status
 
 
+class OrgMultipleChoiceField(forms.ModelMultipleChoiceField):
+    """ModelMultipleChoiceField that silently drops empty participant rows."""
+
+    def clean(self, value):
+        if value:
+            value = [v for v in value if v not in (None, "", " ")]
+        return super().clean(value)
+
+
 class OrderForm(forms.Form):
     manager = forms.ModelChoiceField(
         label="Менеджер",
@@ -28,7 +37,7 @@ class OrderForm(forms.Form):
         label="Потенциальный пользователь", queryset=Organization.objects.all(),
         widget=forms.HiddenInput(),
     )
-    participant_orgs = forms.ModelMultipleChoiceField(
+    participant_orgs = OrgMultipleChoiceField(
         label="Участники проекта", queryset=Organization.objects.all(),
         required=False, widget=forms.MultipleHiddenInput(),
     )
