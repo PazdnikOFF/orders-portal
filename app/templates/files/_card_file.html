@@ -6,7 +6,7 @@
     📎 <a href="{{ active_file.serve_url }}" target="_blank" class="file-link">{{ active_file.original_name }}</a>
     <span class="muted">({{ active_file.size|filesizeformat }}, загружен {{ active_file.uploaded_at|date:"d.m.Y H:i" }})</span>
   </p>
-  {% if caps.manage_files %}
+  {% if caps.manage_files and caps.is_admin or caps.manage_files and not order.is_locked %}
     <button class="btn danger sm"
             hx-post="{% url 'files:detach' active_file.pk %}"
             hx-target="#card-file" hx-swap="innerHTML"
@@ -18,11 +18,13 @@
   <p class="muted">Файл не прикреплён.</p>
 {% endif %}
 
-{% if caps.manage_files %}
+{% if caps.manage_files and caps.is_admin or caps.manage_files and not order.is_locked %}
   <form hx-post="{% url 'files:upload' order.pk %}" hx-target="#card-file" hx-swap="innerHTML"
         hx-encoding="multipart/form-data" style="margin-top:10px">
     {% csrf_token %}
     <input type="file" name="file" class="input" required style="max-width:420px">
     <button class="btn sm" type="submit" style="margin-top:8px">Загрузить документ заказа</button>
   </form>
+{% elif order.is_locked and caps.manage_files %}
+  <p class="muted" style="margin-top:8px">Заказ завершён — изменение файлов доступно только администратору.</p>
 {% endif %}

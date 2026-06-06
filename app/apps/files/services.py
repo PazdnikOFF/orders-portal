@@ -32,6 +32,8 @@ def save_order_file(request, order, uploaded) -> OrderFile:
     user = request.user
     if not user.can_manage_files:
         raise PermissionDenied("Загрузка файлов запрещена для вашей роли.")
+    if order.is_locked and not user.is_admin:
+        raise PermissionDenied("Заказ завершён — изменение файлов доступно только администратору.")
 
     ext = _validate_upload(uploaded)
 
@@ -81,6 +83,8 @@ def detach_order_file(request, order_file: OrderFile, log: bool = True) -> Order
     user = request.user
     if not user.can_manage_files:
         raise PermissionDenied("Удаление файлов запрещено для вашей роли.")
+    if order_file.order.is_locked and not user.is_admin:
+        raise PermissionDenied("Заказ завершён — изменение файлов доступно только администратору.")
 
     abs_path = order_file.abs_path
     directory = abs_path.parent
