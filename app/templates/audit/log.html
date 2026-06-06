@@ -1,17 +1,33 @@
 {% extends "base.html" %}
+{% load order_extras %}
 {% block title %}Журнал действий{% endblock %}
 {% block content %}
 <div class="toolbar">
   <strong>Журнал действий пользователей</strong>
-  <form method="get" class="toolbar" style="margin:0">
-    <select class="input" name="action" onchange="this.form.submit()" style="max-width:260px">
-      <option value="">Все действия</option>
-      {% for val, label in action_types %}
-        <option value="{{ val }}" {% if selected == val %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </form>
+  {% if selected or sel_user or date_from or date_to %}
+    <a class="btn secondary sm" href="{% url 'audit:log' %}">✕ Сбросить</a>
+  {% endif %}
 </div>
+
+<form method="get" action="{% url 'audit:log' %}" class="toolbar kanban-filters">
+  <select class="input" name="action" onchange="this.form.submit()" style="max-width:240px">
+    <option value="">Все действия</option>
+    {% for val, label in action_types %}
+      <option value="{{ val }}" {% if selected == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select class="input" name="user" onchange="this.form.submit()" style="max-width:220px">
+    <option value="">Все пользователи</option>
+    {% for u in users %}
+      <option value="{{ u.pk }}" {% if sel_user == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.fio }} ({{ u.username }})</option>
+    {% endfor %}
+  </select>
+  <span class="muted">Дата:</span>
+  <input class="input" type="date" name="date_from" value="{{ date_from }}" title="с" onchange="this.form.submit()">
+  <span class="muted">—</span>
+  <input class="input" type="date" name="date_to" value="{{ date_to }}" title="по" onchange="this.form.submit()">
+  <button class="btn secondary sm" type="submit">Применить</button>
+</form>
 
 <div class="panel" style="overflow:auto">
   <table class="grid">
@@ -36,9 +52,9 @@
 
 {% if page.has_other_pages %}
 <div class="toolbar" style="margin-top:12px;justify-content:center">
-  {% if page.has_previous %}<a class="btn secondary sm" href="?page={{ page.previous_page_number }}{% if selected %}&action={{ selected }}{% endif %}">← Назад</a>{% endif %}
+  {% if page.has_previous %}<a class="btn secondary sm" href="{% query_replace page=page.previous_page_number %}">← Назад</a>{% endif %}
   <span class="muted">Стр. {{ page.number }} из {{ page.paginator.num_pages }}</span>
-  {% if page.has_next %}<a class="btn secondary sm" href="?page={{ page.next_page_number }}{% if selected %}&action={{ selected }}{% endif %}">Вперёд →</a>{% endif %}
+  {% if page.has_next %}<a class="btn secondary sm" href="{% query_replace page=page.next_page_number %}">Вперёд →</a>{% endif %}
 </div>
 {% endif %}
 {% endblock %}
