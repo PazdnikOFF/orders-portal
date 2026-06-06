@@ -17,7 +17,7 @@
   </td>
   <td onclick="event.stopPropagation()">
     {% if caps.is_admin or caps.is_operator and not order.is_locked %}
-      <select class="status-select {{ order.status }}" name="status"
+      <select class="status-select {{ order.status }}" name="status" data-current="{{ order.status }}"
               hx-post="{% url 'orders:status' order.pk %}" hx-vals='{"render":"row"}'
               hx-target="#order-row-{{ order.pk }}" hx-swap="outerHTML"
               onclick="event.stopPropagation()">

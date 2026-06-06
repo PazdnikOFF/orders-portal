@@ -25,6 +25,7 @@
 <form id="filters" method="get" action="{% url 'orders:table' %}">
   <input type="hidden" name="sort" value="{{ cur_sort }}">
   <input type="hidden" name="dir" value="{{ cur_dir }}">
+  <input type="hidden" name="per_page" value="{{ per_page }}">
 </form>
 {% include "orders/_filter_datalists.html" %}
 
@@ -46,13 +47,13 @@
         <th><input form="filters" name="f_manager" class="input" value="{{ request.GET.f_manager }}"
                    list="dl-managers" placeholder="фильтр…" onchange="this.form.submit()"></th>
         <th><input form="filters" name="f_distributor" class="input" value="{{ request.GET.f_distributor }}"
-                   list="dl-orgs" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
+                   list="dl-distributors" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
         <th><input form="filters" name="f_potential" class="input" value="{{ request.GET.f_potential }}"
-                   list="dl-orgs" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
+                   list="dl-potentials" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
         <th><input form="filters" name="f_participant" class="input" value="{{ request.GET.f_participant }}"
-                   list="dl-orgs" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
+                   list="dl-participants" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
         <th><input form="filters" name="f_kit" class="input" value="{{ request.GET.f_kit }}"
-                   placeholder="фильтр…" onchange="this.form.submit()"></th>
+                   list="dl-kits" placeholder="фильтр…" onchange="this.form.submit()"></th>
         <th><input form="filters" name="f_request_date" type="date" class="input"
                    value="{{ request.GET.f_request_date }}" onchange="this.form.submit()"></th>
         <th>
@@ -86,6 +87,29 @@
     </tbody>
   </table>
 </div>
+
+{% if show_pagination %}
+<div class="pager">
+  <span class="muted">Всего: {{ paginator.count }}</span>
+  <label class="muted">На странице:
+    <select class="input" style="width:auto;display:inline-block" onchange="location.href=this.value">
+      {% for size in page_sizes %}
+        <option value="{% query_replace per_page=size page=1 %}" {% if size == per_page %}selected{% endif %}>{{ size }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <div class="spacer"></div>
+  {% if page.has_previous %}
+    <a class="btn secondary sm" href="{% query_replace page=1 %}">« 1</a>
+    <a class="btn secondary sm" href="{% query_replace page=page.previous_page_number %}">‹ Назад</a>
+  {% endif %}
+  <span class="muted">Стр. {{ page.number }} из {{ paginator.num_pages }}</span>
+  {% if page.has_next %}
+    <a class="btn secondary sm" href="{% query_replace page=page.next_page_number %}">Вперёд ›</a>
+    <a class="btn secondary sm" href="{% query_replace page=paginator.num_pages %}">{{ paginator.num_pages }} »</a>
+  {% endif %}
+</div>
+{% endif %}
 
 <!-- Bottom block / card (TЗ §9) — collapsible, hidden until a row is chosen -->
 <div class="card-block" id="card-wrap" x-data="{open:true}" @expand-card.window="open=true">

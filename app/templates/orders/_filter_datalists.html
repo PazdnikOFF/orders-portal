@@ -1,7 +1,6 @@
-{# Smart-substitution suggestions for filter inputs (from the reference data). #}
-<datalist id="dl-managers">
-  {% for m in manager_options %}<option value="{{ m.short_name }}"></option>{% endfor %}
-</datalist>
-<datalist id="dl-orgs">
-  {% for name in org_options %}<option value="{{ name }}"></option>{% endfor %}
-</datalist>
+{# Autocomplete suggestions for filter inputs — distinct values used per column. #}
+<datalist id="dl-managers">{% for v in dl_managers %}<option value="{{ v }}"></option>{% endfor %}</datalist>
+<datalist id="dl-distributors">{% for v in dl_distributors %}<option value="{{ v }}"></option>{% endfor %}</datalist>
+<datalist id="dl-potentials">{% for v in dl_potentials %}<option value="{{ v }}"></option>{% endfor %}</datalist>
+<datalist id="dl-participants">{% for v in dl_participants %}<option value="{{ v }}"></option>{% endfor %}</datalist>
+<datalist id="dl-kits">{% for v in dl_kits %}<option value="{{ v }}"></option>{% endfor %}</datalist>

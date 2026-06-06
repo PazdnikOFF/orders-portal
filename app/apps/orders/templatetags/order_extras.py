@@ -22,6 +22,19 @@ def sort_url(context, field):
 
 
 @register.simple_tag(takes_context=True)
+def query_replace(context, **kwargs):
+    """Current query string with the given params replaced (for pagination)."""
+    params = context["request"].GET.copy()
+    for key, value in kwargs.items():
+        if value is None:
+            params.pop(key, None)
+        else:
+            params[key] = value
+    params.pop("selected", None)
+    return "?" + params.urlencode()
+
+
+@register.simple_tag(takes_context=True)
 def sort_arrow(context, field):
     """▲/▼ indicator for the currently active sort column."""
     request = context["request"]

@@ -57,6 +57,32 @@
     }
   });
 
+  // --- Confirm transitions to «Произведён»/«Отмена» (TЗ — закрытие заказа) ---
+  var DONE_LABELS = { produced: "Произведён", cancelled: "Отмена" };
+  window.confirmDoneStatus = function (newStatus) {
+    return window.confirm("Перевести заказ в статус «" + DONE_LABELS[newStatus] +
+      "»? После этого заказ будет закрыт для редактирования.");
+  };
+  document.body.addEventListener("htmx:confirm", function (e) {
+    var elt = e.detail.elt, sel = null, newStatus = null, current = null;
+    if (elt.matches && elt.matches("select.status-select")) {            // table inline
+      sel = elt; newStatus = elt.value; current = elt.dataset.current;
+    } else if (elt.matches && elt.matches("form[data-status-form]")) {   // order card save
+      sel = elt.querySelector('select[name="status"]');
+      if (sel) { newStatus = sel.value; current = elt.dataset.currentStatus; }
+    } else {
+      return;  // not a status change — let htmx proceed
+    }
+    if ((newStatus === "produced" || newStatus === "cancelled") && newStatus !== current) {
+      e.preventDefault();
+      if (window.confirmDoneStatus(newStatus)) {
+        e.detail.issueRequest();
+      } else if (sel) {
+        sel.value = current || "";   // revert the dropdown
+      }
+    }
+  });
+
   // --- Kanban drag & drop --------------------------------------------------
   window.initKanban = function () {
     if (typeof Sortable === "undefined") return;
@@ -74,6 +100,11 @@
           const newStatus = evt.to.closest(".column").dataset.status;
           const orderId = card.dataset.orderId;
           if (newStatus === card.dataset.status) return;
+          if ((newStatus === "produced" || newStatus === "cancelled") &&
+              !window.confirmDoneStatus(newStatus)) {
+            window.location.reload();   // declined — put the card back
+            return;
+          }
           fetch("/orders/" + orderId + "/status/", {
             method: "POST",
             headers: { "X-CSRFToken": CSRF, "Content-Type": "application/x-www-form-urlencoded" },

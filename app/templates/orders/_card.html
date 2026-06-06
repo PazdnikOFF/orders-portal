@@ -1,7 +1,8 @@
 <div class="panel card-section">
   <h3>{{ order.order_code }} · <span class="status {{ order.status }}">{{ order.get_status_display }}</span></h3>
 
-  <form hx-post="{% url 'orders:update' order.pk %}" hx-target="#card-block" hx-swap="innerHTML">
+  <form hx-post="{% url 'orders:update' order.pk %}" hx-target="#card-block" hx-swap="innerHTML"
+        data-status-form data-current-status="{{ order.status }}">
     {% csrf_token %}
     {% if form.non_field_errors %}
       <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>

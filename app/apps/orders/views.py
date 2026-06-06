@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.paginator import Paginator
 from django.db.models import Q, Value
 from django.db.models.functions import Concat
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -78,16 +79,32 @@ def _apply_common_filters(request, qs):
     return qs
 
 
-def _filter_options() -> dict:
-    """Datalist suggestions for filter inputs (smart substitution from refs)."""
-    managers = User.objects.filter(role=Role.MANAGER, is_active=True).order_by(
-        "last_name", "first_name"
-    )
-    org_names = list(
-        Organization.objects.exclude(name="").order_by("name")
-        .values_list("name", flat=True).distinct()
-    )
-    return {"manager_options": managers, "org_options": org_names}
+def _distinct_names(qs):
+    return sorted({n for n in qs if n})
+
+
+def _filter_options(request) -> dict:
+    """Datalist autocomplete for filter inputs — distinct values actually used
+    in each column of the records visible to the user."""
+    base = visible_orders(request.user)
+    managers = []
+    seen = set()
+    for ln, fn in base.values_list("manager__last_name", "manager__first_name").distinct():
+        name = f"{ln or ''} {fn or ''}".strip()
+        if name and name not in seen:
+            seen.add(name)
+            managers.append(name)
+    managers.sort()
+    return {
+        "dl_managers": managers,
+        "dl_distributors": _distinct_names(
+            Organization.objects.filter(distributor_orders__in=base).values_list("name", flat=True)),
+        "dl_potentials": _distinct_names(
+            Organization.objects.filter(potential_user_orders__in=base).values_list("name", flat=True)),
+        "dl_participants": _distinct_names(
+            Organization.objects.filter(participant_orders__in=base).values_list("name", flat=True)),
+        "dl_kits": _distinct_names(base.values_list("kit", flat=True)),
+    }
 
 
 def _hide_done(request, qs):
@@ -133,16 +150,36 @@ def _filtered_orders(request):
 # --------------------------------------------------------------------------- #
 # Table view (default) — TЗ §8, amendment §4
 # --------------------------------------------------------------------------- #
+PAGE_SIZES = [30, 50, 100]
+PAGINATION_THRESHOLD = 30  # hide pagination while there are fewer records
+
+
 @login_required
 def table(request):
-    orders = _filtered_orders(request)
+    qs = _filtered_orders(request)
     filter_keys = ["f_manager", "f_distributor", "f_potential", "f_participant",
                    "f_kit", "f_request_date", "f_forecast_date", "f_number", "f_status"]
     # After creating an order we land on ?selected=<pk> to auto-open its card.
     selected = request.GET.get("selected")
     selected_pk = int(selected) if selected and selected.isdigit() else None
+
+    try:
+        per_page = int(request.GET.get("per_page", PAGE_SIZES[0]))
+    except (TypeError, ValueError):
+        per_page = PAGE_SIZES[0]
+    if per_page not in PAGE_SIZES:
+        per_page = PAGE_SIZES[0]
+    paginator = Paginator(qs, per_page)
+    page = paginator.get_page(request.GET.get("page"))
+
     context = {
-        "orders": orders,
+        "page": page,
+        "orders": page.object_list,
+        "paginator": paginator,
+        "per_page": per_page,
+        "page_sizes": PAGE_SIZES,
+        # Pagination is hidden until there are at least 30 records.
+        "show_pagination": paginator.count >= PAGINATION_THRESHOLD,
         "statuses": Status.choices,
         "has_filters": any(request.GET.get(k) for k in filter_keys),
         "show_done": request.GET.get("show_done") == "1",
@@ -150,7 +187,7 @@ def table(request):
         "cur_sort": request.GET.get("sort", DEFAULT_SORT),
         "cur_dir": "desc" if request.GET.get("dir", "desc") == "desc" else "asc",
         "view": "table",
-        **_filter_options(),
+        **_filter_options(request),
     }
     return render(request, "orders/table.html", context)
 
@@ -176,7 +213,7 @@ def kanban(request):
         "show_done": show_done,
         "has_filters": any(request.GET.get(k) for k in filter_keys),
         "view": "kanban",
-        **_filter_options(),
+        **_filter_options(request),
     }
     return render(request, "orders/kanban.html", context)
 
