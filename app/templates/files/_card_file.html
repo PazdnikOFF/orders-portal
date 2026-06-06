@@ -1,4 +1,6 @@
 <h3>Файл заказа</h3>
+{% if file_error %}<div class="errorlist" style="margin:0 0 8px">{{ file_error }}</div>{% endif %}
+{% if file_note %}<div class="saved-note" style="display:block;margin:0 0 8px">✓ {{ file_note }}</div>{% endif %}
 {% if active_file %}
   <p>
     📎 <a href="{{ active_file.serve_url }}" target="_blank" class="file-link">{{ active_file.original_name }}</a>

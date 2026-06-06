@@ -1,7 +1,6 @@
 import mimetypes
 
 from django.conf import settings
-from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404, HttpResponse
@@ -16,6 +15,14 @@ from .models import OrderFile
 from .services import detach_order_file, save_order_file
 
 
+def _card_file(request, order, error=None, note=None):
+    # Inline feedback (no top-of-page flash messages — these are HTMX fragments).
+    return render(request, "files/_card_file.html", {
+        "order": order, "active_file": order.active_file,
+        "file_error": error, "file_note": note,
+    })
+
+
 @login_required
 @require_http_methods(["POST"])
 def upload(request, order_pk):
@@ -24,17 +31,14 @@ def upload(request, order_pk):
         raise PermissionDenied
     uploaded = request.FILES.get("file")
     if not uploaded:
-        messages.error(request, "Файл не выбран.")
-        return render(request, "files/_card_file.html", {"order": order, "active_file": order.active_file})
+        return _card_file(request, order, error="Файл не выбран.")
     try:
         save_order_file(request, order, uploaded)
     except ValidationError as exc:
-        messages.error(request, "; ".join(exc.messages))
-    except PermissionDenied as exc:
-        raise
+        order.refresh_from_db()
+        return _card_file(request, order, error="; ".join(exc.messages))
     order.refresh_from_db()
-    return render(request, "files/_card_file.html",
-                  {"order": order, "active_file": order.active_file})
+    return _card_file(request, order, note="Файл загружен.")
 
 
 @login_required
@@ -45,10 +49,8 @@ def detach(request, pk):
     if not can_view_order(request.user, order):
         raise PermissionDenied
     detach_order_file(request, order_file)
-    messages.success(request, "Файл откреплён от карточки (физически сохранён).")
     order.refresh_from_db()
-    return render(request, "files/_card_file.html",
-                  {"order": order, "active_file": order.active_file})
+    return _card_file(request, order, note="Файл откреплён (физически сохранён).")
 
 
 @login_required

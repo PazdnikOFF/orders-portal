@@ -36,6 +36,18 @@
     document.querySelectorAll(".org-options").forEach(function (o) { o.innerHTML = ""; });
   });
 
+  // --- Auto-dismiss flash messages after 5 seconds --------------------------
+  function dismissMessages() {
+    document.querySelectorAll(".messages li").forEach(function (li) {
+      setTimeout(function () {
+        li.style.transition = "opacity .4s";
+        li.style.opacity = "0";
+        setTimeout(function () { li.remove(); }, 400);
+      }, 5000);
+    });
+  }
+  document.addEventListener("DOMContentLoaded", dismissMessages);
+
   // --- Kanban drag & drop --------------------------------------------------
   window.initKanban = function () {
     if (typeof Sortable === "undefined") return;
