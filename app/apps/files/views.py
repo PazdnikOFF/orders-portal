@@ -1,4 +1,6 @@
 import mimetypes
+from pathlib import Path
+from urllib.parse import quote
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -7,6 +9,21 @@ from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils.encoding import iri_to_uri
 from django.views.decorators.http import require_http_methods
+
+
+def _content_disposition(filename: str, ascii_fallback: str = "", kind: str = "inline") -> str:
+    """
+    Build a Content-Disposition header that survives Cyrillic file names on
+    Windows, macOS and Linux clients.
+
+    RFC 6266 + RFC 5987: send both an ASCII fallback (filename=) and the real
+    UTF-8 name in filename* — browsers (Chrome, Safari, Firefox, Edge) pick
+    the UTF-8 variant and show «РЭ-000037.png» to the user.
+    """
+    encoded = quote(filename, safe="", encoding="utf-8")
+    fallback = ascii_fallback or filename.encode("ascii", "ignore").decode("ascii") or "file"
+    fallback = fallback.replace('"', "").replace("\\", "")
+    return f'{kind}; filename="{fallback}"; filename*=UTF-8\'\'{encoded}'
 
 from apps.orders.models import Order
 from apps.orders.services import can_view_order
@@ -64,18 +81,24 @@ def serve(request, pk):
     if not can_view_order(request.user, order_file.order):
         raise PermissionDenied
 
-    download_name = f"{order_file.order.order_code}_{order_file.original_name}"
+    # Имя файла при скачивании = ровно «РЭ-000037.<ext>» (без оригинального
+    # имени, выбранного пользователем). ASCII-вариант — file_code (RE-000037)
+    # на случай совсем древних клиентов без RFC 5987.
+    download_name = order_file.stored_name
+    suffix = Path(order_file.stored_name).suffix
+    ascii_fallback = f"{order_file.order.file_code}{suffix}"
     content_type = order_file.content_type or mimetypes.guess_type(order_file.stored_name)[0] \
         or "application/octet-stream"
+    cd_header = _content_disposition(download_name, ascii_fallback=ascii_fallback, kind="inline")
 
     if settings.DEBUG:
         if not order_file.abs_path.exists():
             raise Http404("Файл не найден на диске.")
         resp = FileResponse(open(order_file.abs_path, "rb"), content_type=content_type)
-        resp["Content-Disposition"] = f'inline; filename="{iri_to_uri(download_name)}"'
+        resp["Content-Disposition"] = cd_header
         return resp
 
     resp = HttpResponse(content_type=content_type)
-    resp["Content-Disposition"] = f'inline; filename="{iri_to_uri(download_name)}"'
+    resp["Content-Disposition"] = cd_header
     resp["X-Accel-Redirect"] = iri_to_uri(order_file.internal_redirect)
     return resp

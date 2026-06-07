@@ -4,7 +4,7 @@
 
 {% if active_file %}
   <p>
-    📎 <a href="{{ active_file.serve_url }}" target="_blank" class="file-link">{{ active_file.original_name }}</a>
+    📎 <a href="{{ active_file.serve_url }}" target="_blank" class="file-link">{{ active_file.stored_name }}</a>
     <span class="muted">({{ active_file.size|filesizeformat }}, загружен {{ active_file.uploaded_at|date:"d.m.Y H:i" }})</span>
   </p>
   {% if caps.is_admin %}
