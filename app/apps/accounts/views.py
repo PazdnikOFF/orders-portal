@@ -67,18 +67,24 @@ def user_create(request):
 @require_http_methods(["GET", "POST"])
 def user_edit(request, pk):
     user = get_object_or_404(User, pk=pk)
+    old_username = user.username
     form = UserEditForm(request.POST or None, instance=user)
     if request.method == "POST" and form.is_valid():
         form.save()
         pwd_changed = bool(form.cleaned_data.get("new_password"))
+        renamed = old_username != user.username
         summary = f"Изменён пользователь {user.username} (роль {user.get_role_display()})"
+        if renamed:
+            summary += f"; логин изменён с «{old_username}» на «{user.username}»"
         if pwd_changed:
             summary += "; задан новый пароль"
         log_action(request, ActionType.USER_UPDATE, target=user, summary=summary)
-        messages.success(
-            request,
-            "Изменения сохранены." + (" Пароль обновлён." if pwd_changed else ""),
-        )
+        notes = []
+        if renamed:
+            notes.append(f"Новый логин: {user.username}.")
+        if pwd_changed:
+            notes.append("Пароль обновлён.")
+        messages.success(request, "Изменения сохранены. " + " ".join(notes))
         return redirect("accounts:user_list")
     return render(
         request, "accounts/user_form.html",

@@ -71,13 +71,27 @@ class UserEditForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["last_name", "first_name", "middle_name", "role", "is_active"]
+        fields = ["username", "last_name", "first_name", "middle_name", "role", "is_active"]
         widgets = {
+            "username": forms.TextInput(attrs={"class": "input", "autocomplete": "off"}),
             "last_name": forms.TextInput(attrs={"class": "input"}),
             "first_name": forms.TextInput(attrs={"class": "input"}),
             "middle_name": forms.TextInput(attrs={"class": "input"}),
             "role": forms.Select(attrs={"class": "input"}),
         }
+        help_texts = {
+            "username": (
+                "Латиница, цифры и символы @/./+/-/_. "
+                "Под этим логином пользователь будет входить в портал."
+            ),
+        }
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        qs = User.objects.filter(username__iexact=username).exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("Этот логин уже занят другим пользователем.")
+        return username
 
     def clean(self):
         cleaned = super().clean()
