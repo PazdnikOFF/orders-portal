@@ -34,9 +34,9 @@
           {% for e in form.potential_user_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
-        {# Участники проекта (Комментарий) — динамический список организаций #}
+        {# Комментарий — динамический список организаций-участников #}
         <div class="field">
-          <label>Участники проекта (Комментарий)</label>
+          <label>Комментарий</label>
           {% if form.participant_orgs.field.disabled %}
             <div class="org-list readonly-value">{% for item in order.participants_display %}<a class="org-cell-link" href="{{ item.org.rusprofile_url }}" target="_blank" rel="noopener">{{ item.display }}</a>{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</div>
           {% else %}

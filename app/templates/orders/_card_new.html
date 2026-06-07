@@ -30,7 +30,7 @@
         </div>
 
         <div class="field">
-          <label>Участники проекта (Комментарий) *</label>
+          <label>Комментарий *</label>
           {% include "orders/_participants.html" with participant_values=participant_values %}
           {% for e in form.participant_orgs.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
