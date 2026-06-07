@@ -1,30 +1,44 @@
+{# Single attached file per order. Once uploaded, only the admin can replace
+   or detach it. On disk the file is named after the order number in Cyrillic:
+   РЭ-000001.<ext>. #}
 <h3>Файл заказа</h3>
 {% if file_error %}<div class="errorlist" style="margin:0 0 8px">{{ file_error }}</div>{% endif %}
 {% if file_note %}<div class="saved-note" style="display:block;margin:0 0 8px">✓ {{ file_note }}</div>{% endif %}
+
 {% if active_file %}
   <p>
     📎 <a href="{{ active_file.serve_url }}" target="_blank" class="file-link">{{ active_file.original_name }}</a>
     <span class="muted">({{ active_file.size|filesizeformat }}, загружен {{ active_file.uploaded_at|date:"d.m.Y H:i" }})</span>
   </p>
-  {% if caps.manage_files and caps.is_admin or caps.manage_files and not order.is_locked %}
+  {% if caps.is_admin %}
     <button class="btn danger sm"
             hx-post="{% url 'files:detach' active_file.pk %}"
             hx-target="#card-file" hx-swap="innerHTML"
             hx-confirm="Открепить файл от карточки? Физически файл сохранится (будет переименован с «_»).">
       Удалить из карточки
     </button>
+    <form hx-post="{% url 'files:upload' order.pk %}" hx-target="#card-file" hx-swap="innerHTML"
+          hx-encoding="multipart/form-data" style="margin-top:10px">
+      {% csrf_token %}
+      <input type="file" name="file" class="input" required style="max-width:420px">
+      <button class="btn sm" type="submit" style="margin-top:8px">Заменить документ</button>
+    </form>
+  {% else %}
+    <p class="muted" style="margin-top:8px">
+      Файл прикреплён. Изменить или удалить его может только администратор.
+    </p>
   {% endif %}
 {% else %}
+  {# No file attached yet — anyone with «manage files» right can upload one. #}
   <p class="muted">Файл не прикреплён.</p>
-{% endif %}
-
-{% if caps.manage_files and caps.is_admin or caps.manage_files and not order.is_locked %}
-  <form hx-post="{% url 'files:upload' order.pk %}" hx-target="#card-file" hx-swap="innerHTML"
-        hx-encoding="multipart/form-data" style="margin-top:10px">
-    {% csrf_token %}
-    <input type="file" name="file" class="input" required style="max-width:420px">
-    <button class="btn sm" type="submit" style="margin-top:8px">Загрузить документ заказа</button>
-  </form>
-{% elif order.is_locked and caps.manage_files %}
-  <p class="muted" style="margin-top:8px">Заказ завершён — изменение файлов доступно только администратору.</p>
+  {% if caps.manage_files and caps.is_admin or caps.manage_files and not order.is_locked %}
+    <form hx-post="{% url 'files:upload' order.pk %}" hx-target="#card-file" hx-swap="innerHTML"
+          hx-encoding="multipart/form-data" style="margin-top:10px">
+      {% csrf_token %}
+      <input type="file" name="file" class="input" required style="max-width:420px">
+      <button class="btn sm" type="submit" style="margin-top:8px">Загрузить документ заказа</button>
+    </form>
+  {% elif order.is_locked and caps.manage_files %}
+    <p class="muted" style="margin-top:8px">Заказ завершён — изменение файлов доступно только администратору.</p>
+  {% endif %}
 {% endif %}

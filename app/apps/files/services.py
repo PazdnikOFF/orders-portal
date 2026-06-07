@@ -25,9 +25,13 @@ def _validate_upload(uploaded):
 
 def save_order_file(request, order, uploaded) -> OrderFile:
     """
-    Store an uploaded document under the order's folder, named by order number
-    (TЗ §12.8). If a file is already attached, the old one is soft-detached
-    first so there is exactly one active document per order.
+    Store an uploaded document under the order's folder. The on-disk name is
+    the human order code in Cyrillic — РЭ-000001.<ext> (TЗ §12.8).
+
+    Only one file may be attached at a time:
+      - if there is NO active file, anyone with «manage files» right can upload;
+      - if an active file already exists, ONLY the admin can replace it (the
+        previous file is soft-detached automatically).
     """
     user = request.user
     if not user.can_manage_files:
@@ -35,22 +39,28 @@ def save_order_file(request, order, uploaded) -> OrderFile:
     if order.is_locked and not user.is_admin:
         raise PermissionDenied("Заказ завершён — изменение файлов доступно только администратору.")
 
+    active = order.active_file
+    if active and not user.is_admin:
+        raise PermissionDenied(
+            "К заявке уже прикреплён файл. Заменить его может только администратор."
+        )
+
     ext = _validate_upload(uploaded)
 
-    # Detach any currently active file (keeps history, renames on disk).
-    active = order.active_file
+    # Replace the currently attached file (admin only — guarded above).
     if active:
         detach_order_file(request, active, log=False)
 
     order_dir = settings.ORDER_FILES_ROOT / str(order.order_number)
     order_dir.mkdir(parents=True, exist_ok=True)
 
-    stored_name = f"{order.file_code}.{ext}"
+    # File name = human order code in Cyrillic (РЭ-000001.<ext>).
+    stored_name = f"{order.order_code}.{ext}"
     abs_path = order_dir / stored_name
     # Avoid clobbering a previously detached file with the same target name.
     counter = 1
     while abs_path.exists():
-        stored_name = f"{order.file_code}-{counter}.{ext}"
+        stored_name = f"{order.order_code}-{counter}.{ext}"
         abs_path = order_dir / stored_name
         counter += 1
 
@@ -81,10 +91,12 @@ def detach_order_file(request, order_file: OrderFile, log: bool = True) -> Order
     prepend "_" to the on-disk name; skip rename if it already starts with "_".
     """
     user = request.user
-    if not user.can_manage_files:
-        raise PermissionDenied("Удаление файлов запрещено для вашей роли.")
-    if order_file.order.is_locked and not user.is_admin:
-        raise PermissionDenied("Заказ завершён — изменение файлов доступно только администратору.")
+    # Only the admin can detach a file that's actually attached to an order
+    # (everyone else's files become «sealed» after upload).
+    if not user.is_admin:
+        raise PermissionDenied(
+            "Удалить или открепить файл от карточки может только администратор."
+        )
 
     abs_path = order_file.abs_path
     directory = abs_path.parent
