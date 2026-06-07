@@ -86,6 +86,49 @@ var _pendingAfterSave = null;  // action to run after a save we initiated
     return window.confirm("Перевести заказ в статус «" + DONE_LABELS[newStatus] +
       "»? После этого заказ будет закрыт для редактирования.");
   };
+  // Parses «ДД.ММ.ГГГГ» or ISO «ГГГГ-ММ-ДД» -> Date at midnight, or null.
+  function _parseLocalDate(value) {
+    var v = (value || "").trim();
+    if (!v) return null;
+    var m = v.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (m) return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+    var iso = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (iso) return new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
+    return null;
+  }
+
+  // Aggregate pre-submit checks for the order card.
+  // Returns true to proceed, false to cancel htmx send.
+  function _validateCardForm(form) {
+    if (!form) return true;
+
+    // 1) Distributor != Potential User
+    var dist = form.querySelector('input.org-id[name="distributor_org"]');
+    var pot  = form.querySelector('input.org-id[name="potential_user_org"]');
+    if (dist && pot && dist.value && pot.value && dist.value === pot.value) {
+      alert("Дистрибьютор и Потенциальный пользователь не могут быть одной и той же организацией.");
+      return false;
+    }
+
+    // 2) Прогнозируемая дата не может быть в прошлом.
+    var dateInp = form.querySelector('input[name="forecast_date"]');
+    if (dateInp && dateInp.value.trim()) {
+      var d = _parseLocalDate(dateInp.value);
+      if (d) {
+        var today = new Date(); today.setHours(0, 0, 0, 0);
+        d.setHours(0, 0, 0, 0);
+        if (d < today) {
+          alert("Прогнозируемая дата не может быть в прошлом.");
+          try { dateInp.focus(); } catch (_) {}
+          return false;
+        }
+      }
+    }
+
+    // 3) Пустой «Комментарий» — спросить про потенциального пользователя.
+    return _confirmEmptyComment(form);
+  }
+
   // Если в форме карточки нет выбранных «комментариев» (участников) — задаём
   // вопрос про потенциального пользователя. Возвращает true, если форму можно
   // отправлять дальше; false — отменить (пользователь должен заполнить ИНН).
@@ -122,9 +165,10 @@ var _pendingAfterSave = null;  // action to run after a save we initiated
   document.body.addEventListener("htmx:confirm", function (e) {
     var elt = e.detail.elt;
 
-    // 1) Карточка заказа — спросить про пустой комментарий.
+    // 1) Карточка заказа — все проверки перед сабмитом (даты, дубль ЮЛ,
+    //    пустой комментарий).
     if (elt.matches && elt.matches("form[data-card-form]")) {
-      if (!_confirmEmptyComment(elt)) { e.preventDefault(); return; }
+      if (!_validateCardForm(elt)) { e.preventDefault(); return; }
     }
 
     // 2) Подтверждение перевода в «Произведён»/«Отмена».
@@ -331,6 +375,20 @@ function selectOrgOption(btn) {
       if (h.closest("[data-org-combo]") !== combo && h.value === orgId) duplicate = true;
     });
     if (duplicate) { alert("Эта организация уже добавлена в участники."); return; }
+  }
+
+  // Distributor != Potential User. If user picks the same org in the paired
+  // field, refuse and explain.
+  var pair = { distributor_org: "potential_user_org",
+               potential_user_org: "distributor_org" };
+  var hid  = combo.querySelector(".org-id");
+  var name = hid ? hid.name : "";
+  if (orgId && pair[name]) {
+    var twin = document.querySelector('input.org-id[name="' + pair[name] + '"]');
+    if (twin && twin.value === orgId) {
+      alert("Дистрибьютор и Потенциальный пользователь не могут быть одной и той же организацией.");
+      return;
+    }
   }
 
   combo.querySelector(".org-id").value = orgId;

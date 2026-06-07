@@ -5,6 +5,7 @@ and the chosen Organization is submitted by id. Field availability is gated by
 the stage/role matrix — non-editable fields are rendered read-only.
 """
 from django import forms
+from django.utils import timezone
 
 from apps.accounts.models import Role, User
 from apps.directories.models import Organization
@@ -75,8 +76,24 @@ class OrderForm(forms.Form):
             if not matrix.can_edit_field(user, matrix_field, stage):
                 self.fields[form_field].disabled = True
 
+    def clean_forecast_date(self):
+        """Прогнозируемая дата не может быть в прошлом (TЗ)."""
+        fd = self.cleaned_data.get("forecast_date")
+        if fd and fd < timezone.localdate():
+            raise forms.ValidationError("Прогнозируемая дата не может быть в прошлом.")
+        return fd
+
     def clean(self):
         cleaned = super().clean()
+
+        # Distributor != Potential User (по ИНН/КПП = по pk организации).
+        dist = cleaned.get("distributor_org")
+        pot = cleaned.get("potential_user_org")
+        if dist and pot and dist.pk == pot.pk:
+            err = "Дистрибьютор и Потенциальный пользователь не могут быть одной и той же организацией."
+            self.add_error("distributor_org", err)
+            self.add_error("potential_user_org", err)
+
         # «Комментарий» (участники) — необязательное поле. Клиент задаёт вопрос,
         # подставлять ли «Потенциального пользователя», если поле осталось пустым.
 
