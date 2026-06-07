@@ -86,13 +86,24 @@ class OrderForm(forms.Form):
     def clean(self):
         cleaned = super().clean()
 
-        # Distributor != Potential User (по ИНН/КПП = по pk организации).
+        # Distributor != Potential User: проверяем по ИНН (нельзя даже
+        # филиалы с разными КПП). Тот же ИНН — это та же компания.
         dist = cleaned.get("distributor_org")
         pot = cleaned.get("potential_user_org")
-        if dist and pot and dist.pk == pot.pk:
-            err = "Дистрибьютор и Потенциальный пользователь не могут быть одной и той же организацией."
+        if dist and pot and dist.inn == pot.inn:
+            err = "Дистрибьютор и Потенциальный пользователь не могут иметь один и тот же ИНН."
             self.add_error("distributor_org", err)
             self.add_error("potential_user_org", err)
+
+        # Distributor != любой Участник («Комментарий») по ИНН.
+        parts = cleaned.get("participant_orgs")
+        if dist and parts:
+            clash = next((p for p in parts if p.inn == dist.inn), None)
+            if clash:
+                err = (f"Дистрибьютор не может совпадать по ИНН с организацией "
+                       f"в поле «Комментарий»: {dist.inn}.")
+                self.add_error("distributor_org", err)
+                self.add_error("participant_orgs", err)
 
         # «Комментарий» (участники) — необязательное поле. Клиент задаёт вопрос,
         # подставлять ли «Потенциального пользователя», если поле осталось пустым.

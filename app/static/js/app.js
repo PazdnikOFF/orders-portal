@@ -102,12 +102,31 @@ var _pendingAfterSave = null;  // action to run after a save we initiated
   function _validateCardForm(form) {
     if (!form) return true;
 
-    // 1) Distributor != Potential User
-    var dist = form.querySelector('input.org-id[name="distributor_org"]');
-    var pot  = form.querySelector('input.org-id[name="potential_user_org"]');
-    if (dist && pot && dist.value && pot.value && dist.value === pot.value) {
-      alert("Дистрибьютор и Потенциальный пользователь не могут быть одной и той же организацией.");
+    function innByName(n) {
+      var h = form.querySelector('input.org-id[name="' + n + '"]');
+      if (!h) return "";
+      var c = h.closest("[data-org-combo]");
+      return c ? (c.dataset.inn || "") : "";
+    }
+
+    // 1) Distributor != Potential User по ИНН
+    var distInn = innByName("distributor_org");
+    var potInn  = innByName("potential_user_org");
+    if (distInn && potInn && distInn === potInn) {
+      alert("Дистрибьютор и Потенциальный пользователь не могут иметь один и тот же ИНН.");
       return false;
+    }
+
+    // 1.1) Distributor != любой Комментарий по ИНН
+    if (distInn) {
+      var conflict = false;
+      form.querySelectorAll('[data-participants] [data-org-combo]').forEach(function (c) {
+        if (c.dataset.inn && c.dataset.inn === distInn) conflict = true;
+      });
+      if (conflict) {
+        alert("Дистрибьютор не может совпадать по ИНН с организацией в поле «Комментарий».");
+        return false;
+      }
     }
 
     // 2) Прогнозируемая дата не может быть в прошлом.
@@ -377,17 +396,46 @@ function selectOrgOption(btn) {
     if (duplicate) { alert("Эта организация уже добавлена в участники."); return; }
   }
 
-  // Distributor != Potential User. If user picks the same org in the paired
-  // field, refuse and explain.
-  var pair = { distributor_org: "potential_user_org",
-               potential_user_org: "distributor_org" };
+  // Cross-field правила по ИНН (а не по pk): филиалы с одним ИНН и разными
+  // КПП тоже считаются совпадением — это та же компания.
   var hid  = combo.querySelector(".org-id");
   var name = hid ? hid.name : "";
-  if (orgId && pair[name]) {
-    var twin = document.querySelector('input.org-id[name="' + pair[name] + '"]');
-    if (twin && twin.value === orgId) {
-      alert("Дистрибьютор и Потенциальный пользователь не могут быть одной и той же организацией.");
-      return;
+
+  function _innOf(twinHidden) {
+    if (!twinHidden) return "";
+    var c = twinHidden.closest("[data-org-combo]");
+    return c ? (c.dataset.inn || "") : "";
+  }
+
+  if (orgId && inn) {
+    // 1) Distributor <-> Potential User
+    var pair = { distributor_org: "potential_user_org",
+                 potential_user_org: "distributor_org" };
+    if (pair[name]) {
+      var twinHid = document.querySelector('input.org-id[name="' + pair[name] + '"]');
+      if (_innOf(twinHid) === inn) {
+        alert("Дистрибьютор и Потенциальный пользователь не могут иметь один и тот же ИНН.");
+        return;
+      }
+    }
+
+    // 2) Distributor <-> участник Комментария
+    if (name === "distributor_org") {
+      var hit = false;
+      document.querySelectorAll('[data-participants] [data-org-combo]').forEach(function (c) {
+        if (c.dataset.inn === inn) hit = true;
+      });
+      if (hit) {
+        alert("Дистрибьютор не может совпадать по ИНН с организацией в поле «Комментарий».");
+        return;
+      }
+    }
+    if (combo.closest("[data-participants]")) {
+      var dHid = document.querySelector('input.org-id[name="distributor_org"]');
+      if (_innOf(dHid) === inn) {
+        alert("Эта организация уже выбрана как Дистрибьютор. У дистрибьютора и участника «Комментария» не может быть один ИНН.");
+        return;
+      }
     }
   }
 
