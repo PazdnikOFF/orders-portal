@@ -60,6 +60,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     # Hard 45-minute absolute session cap + activity tracking.
     "apps.accounts.middleware.SessionTimeoutMiddleware",
+    # Renders dates/times in DISPLAY_TIME_ZONE (storage stays UTC).
+    "apps.accounts.middleware.TimezoneMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Stamps request.user / IP onto thread-local for history & audit logging.
@@ -187,8 +189,9 @@ LANGUAGE_CODE = "ru-ru"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
-# Timezone used to render dates/times in the UI (browser-local override planned).
-DISPLAY_TIME_ZONE = env("DISPLAY_TIME_ZONE", default="Europe/Moscow")
+# Timezone used to render dates/times in the UI. UTC stays the storage default;
+# templates show local time via apps.accounts.middleware.TimezoneMiddleware.
+DISPLAY_TIME_ZONE = env("DISPLAY_TIME_ZONE", default="Asia/Yekaterinburg")  # UTC+5
 DATE_INPUT_FORMATS = ["%d.%m.%Y"]
 
 # --------------------------------------------------------------------------- #

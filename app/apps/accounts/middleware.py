@@ -1,4 +1,6 @@
-"""Enforces the 45-minute session limit (TЗ §1)."""
+"""Session timeout (TЗ §1) and display-timezone activation."""
+import zoneinfo
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -7,6 +9,28 @@ from django.urls import reverse
 from django.utils import timezone
 
 LAST_ACTIVITY_KEY = "_last_activity"
+
+
+class TimezoneMiddleware:
+    """
+    Activates settings.DISPLAY_TIME_ZONE for the duration of each request.
+    Storage stays UTC (TЗ §10); templates show local time automatically
+    (Django uses the active timezone for filters like |date and |time).
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        try:
+            self.tz = zoneinfo.ZoneInfo(settings.DISPLAY_TIME_ZONE)
+        except Exception:                                 # pragma: no cover
+            self.tz = timezone.utc
+
+    def __call__(self, request):
+        timezone.activate(self.tz)
+        try:
+            return self.get_response(request)
+        finally:
+            timezone.deactivate()
 
 
 class SessionTimeoutMiddleware:
