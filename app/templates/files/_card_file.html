@@ -1,6 +1,3 @@
-{# Single attached file per order. Once uploaded, only the admin can replace
-   or detach it. On disk the file is named after the order number in Cyrillic:
-   РЭ-000001.<ext>. #}
 <h3>Файл заказа</h3>
 {% if file_error %}<div class="errorlist" style="margin:0 0 8px">{{ file_error }}</div>{% endif %}
 {% if file_note %}<div class="saved-note" style="display:block;margin:0 0 8px">✓ {{ file_note }}</div>{% endif %}
@@ -29,7 +26,6 @@
     </p>
   {% endif %}
 {% else %}
-  {# No file attached yet — anyone with «manage files» right can upload one. #}
   <p class="muted">Файл не прикреплён.</p>
   {% if caps.manage_files and caps.is_admin or caps.manage_files and not order.is_locked %}
     <form hx-post="{% url 'files:upload' order.pk %}" hx-target="#card-file" hx-swap="innerHTML"
