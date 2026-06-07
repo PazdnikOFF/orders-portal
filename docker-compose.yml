@@ -78,8 +78,9 @@ services:
     restart: unless-stopped
     depends_on: [web]
     ports:
-      # Host port -> container 80. Change HTTP_PORT to avoid clashing with Bitrix.
-      - "${HTTP_PORT:-8080}:80"
+      # Listens on localhost only — the external Apache (Bitrix24) reverse-proxies
+      # https://orders.<host>/ to here. HTTP_PORT must be free on the host.
+      - "127.0.0.1:${HTTP_PORT:-8080}:80"
     volumes:
       - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - staticfiles:/app/staticfiles:ro
