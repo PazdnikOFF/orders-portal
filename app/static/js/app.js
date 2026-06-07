@@ -86,15 +86,56 @@ var _pendingAfterSave = null;  // action to run after a save we initiated
     return window.confirm("Перевести заказ в статус «" + DONE_LABELS[newStatus] +
       "»? После этого заказ будет закрыт для редактирования.");
   };
+  // Если в форме карточки нет выбранных «комментариев» (участников) — задаём
+  // вопрос про потенциального пользователя. Возвращает true, если форму можно
+  // отправлять дальше; false — отменить (пользователь должен заполнить ИНН).
+  function _confirmEmptyComment(form) {
+    if (!form) return true;
+    var rows = form.querySelectorAll('input[name="participant_orgs"]');
+    for (var i = 0; i < rows.length; i++) {
+      if ((rows[i].value || "").trim()) return true;     // есть хотя бы один — ОК
+    }
+    var pot = form.querySelector('input[name="potential_user_org"]');
+    var potValue = pot ? (pot.value || "").trim() : "";
+    if (!potValue) {
+      window.alert("Заполните «Потенциальный пользователь» либо добавьте хотя бы один ИНН в «Комментарий».");
+      return false;
+    }
+    var sameAsUser = window.confirm(
+      "Поле «Комментарий» пустое.\n\n" +
+      "Конечный пользователь такой же, как «Потенциальный пользователь»?\n" +
+      "ОК — подставить его в «Комментарий».\n" +
+      "Отмена — добавить ИНН в «Комментарий» вручную."
+    );
+    if (sameAsUser) {
+      var hidden = document.createElement("input");
+      hidden.type = "hidden";
+      hidden.name = "participant_orgs";
+      hidden.value = potValue;
+      form.appendChild(hidden);
+      return true;
+    }
+    window.alert("Добавьте хотя бы один ИНН в поле «Комментарий».");
+    return false;
+  }
+
   document.body.addEventListener("htmx:confirm", function (e) {
-    var elt = e.detail.elt, sel = null, newStatus = null, current = null;
+    var elt = e.detail.elt;
+
+    // 1) Карточка заказа — спросить про пустой комментарий.
+    if (elt.matches && elt.matches("form[data-card-form]")) {
+      if (!_confirmEmptyComment(elt)) { e.preventDefault(); return; }
+    }
+
+    // 2) Подтверждение перевода в «Произведён»/«Отмена».
+    var sel = null, newStatus = null, current = null;
     if (elt.matches && elt.matches("select.status-select")) {            // table inline
       sel = elt; newStatus = elt.value; current = elt.dataset.current;
     } else if (elt.matches && elt.matches("form[data-status-form]")) {   // order card save
       sel = elt.querySelector('select[name="status"]');
       if (sel) { newStatus = sel.value; current = elt.dataset.currentStatus; }
     } else {
-      return;  // not a status change — let htmx proceed
+      return;  // не статус — htmx продолжает
     }
     if ((newStatus === "produced" || newStatus === "cancelled") && newStatus !== current) {
       e.preventDefault();

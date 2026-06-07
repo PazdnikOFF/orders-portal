@@ -77,9 +77,8 @@ class OrderForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        # At creation all listed fields are mandatory (TЗ §13).
-        if self.is_create and not cleaned.get("participant_orgs"):
-            self.add_error("participant_orgs", "Добавьте хотя бы одну организацию-участника.")
+        # «Комментарий» (участники) — необязательное поле. Клиент задаёт вопрос,
+        # подставлять ли «Потенциального пользователя», если поле осталось пустым.
 
         # The same organization (ИНН + КПП) must not repeat among participants.
         # Branches (same INN, different КПП) are different organizations and are
