@@ -1,4 +1,6 @@
 """Order business logic: visibility, create/update, status changes, history."""
+import datetime
+
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import QuerySet
@@ -8,6 +10,17 @@ from apps.audit.services import log_action
 
 from .matrix import can_edit_field
 from .models import Order, OrderHistory, Status
+
+
+def _fmt(v):
+    """Stringify a value for OrderHistory in the unified «ДД.ММ.ГГГГ» format."""
+    if v is None:
+        return ""
+    if isinstance(v, datetime.datetime):
+        return v.strftime("%d.%m.%Y %H:%M")
+    if isinstance(v, datetime.date):
+        return v.strftime("%d.%m.%Y")
+    return str(v)
 
 
 def visible_orders(user) -> QuerySet[Order]:
@@ -32,12 +45,12 @@ def can_view_order(user, order: Order) -> bool:
 
 
 def record_change(order, user, field, label, old, new):
-    if str(old) == str(new):
+    old_s, new_s = _fmt(old), _fmt(new)
+    if old_s == new_s:
         return None
     return OrderHistory.objects.create(
         order=order, user=user, field=field, field_label=label,
-        old_value="" if old is None else str(old),
-        new_value="" if new is None else str(new),
+        old_value=old_s, new_value=new_s,
     )
 
 

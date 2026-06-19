@@ -193,6 +193,12 @@ USE_TZ = True
 # templates show local time via apps.accounts.middleware.TimezoneMiddleware.
 DISPLAY_TIME_ZONE = env("DISPLAY_TIME_ZONE", default="Asia/Yekaterinburg")  # UTC+5
 DATE_INPUT_FORMATS = ["%d.%m.%Y"]
+# Единый формат «ДД.ММ.ГГГГ» во всём UI. Применяется как дефолтный аргумент
+# фильтров {{ value|date }}, {{ value|time }} и django.utils.formats.date_format.
+DATE_FORMAT = "d.m.Y"
+DATETIME_FORMAT = "d.m.Y H:i"
+SHORT_DATE_FORMAT = "d.m.Y"
+SHORT_DATETIME_FORMAT = "d.m.Y H:i"
 
 # --------------------------------------------------------------------------- #
 # Static & media
