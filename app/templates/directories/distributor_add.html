@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Новый дистрибьютор{% endblock %}
+{% block content %}
+<div class="panel card-section" style="max-width:600px">
+  <h3>Новый дистрибьютор</h3>
+
+  {% if step == "choose" %}
+    {# Step 2 — pick the branch (КПП) when an INN has several. #}
+    <p class="muted">ИНН <strong>{{ inn }}</strong> — выберите нужную организацию/филиал:</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="confirm">
+      <input type="hidden" name="inn" value="{{ inn }}">
+      <div class="org-choice-list">
+        {% for c in candidates %}
+          <label class="org-choice">
+            <input type="radio" name="kpp" value="{{ c.kpp }}" {% if forloop.first %}checked{% endif %}>
+            <span>
+              <strong>{{ c.name|default:c.full_name }}</strong><br>
+              <span class="muted">ИНН {{ c.inn }}{% if c.kpp %} · КПП {{ c.kpp }}{% endif %}{% if c.address %} · {{ c.address }}{% endif %}</span>
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+      <div class="toolbar" style="margin-top:10px">
+        <button class="btn" type="submit">Добавить</button>
+        <a class="btn secondary" href="{% url 'directories:distributor_add' %}">Назад</a>
+      </div>
+    </form>
+
+  {% else %}
+    {# Step 1 — enter INN. #}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="lookup">
+      {% if form.non_field_errors %}
+        <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% for field in form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="hint">{{ field.help_text }}</div>{% endif %}
+          {% for e in field.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+      {% endfor %}
+      <div class="toolbar">
+        <button class="btn" type="submit">Найти в DaData →</button>
+        <a class="btn secondary" href="{% url 'directories:distributor_list' %}">Отмена</a>
+      </div>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

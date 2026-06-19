@@ -12,7 +12,8 @@ from apps.integrations.providers import OrgLookupError
 from .forms import DistributorAddForm, DistributorEditForm
 from .models import Distributor
 from .services import (
-    create_distributor_from_inn,
+    create_distributor,
+    lookup_distributor_candidates,
     refresh_distributor_from_provider,
     suggest_orgs,
 )
@@ -81,18 +82,44 @@ def distributor_list(request):
 @role_required("can_manage_users")
 @require_http_methods(["GET", "POST"])
 def distributor_add(request):
+    """
+    Two-step add: enter ИНН → pick the branch (КПП) if DaData returns several →
+    create. Name/реквизиты are pulled from DaData; no free-text entry.
+    """
+    if request.method == "POST" and request.POST.get("action") == "confirm":
+        inn = (request.POST.get("inn") or "").strip()
+        kpp = request.POST.get("kpp", "")
+        if Distributor.objects.filter(inn=inn).exists():
+            messages.error(request, "Дистрибьютор с этим ИНН уже есть в справочнике.")
+            return redirect("directories:distributor_list")
+        try:
+            candidates = lookup_distributor_candidates(inn)
+        except OrgLookupError as exc:
+            messages.error(request, str(exc))
+            return render(request, "directories/distributor_add.html",
+                          {"step": "inn", "form": DistributorAddForm()})
+        chosen = next((c for c in candidates if (c.kpp or "") == kpp), candidates[0])
+        dist = create_distributor(chosen)
+        log_action(request, ActionType.DISTRIBUTOR_CREATE, target=dist,
+                   summary=f"Добавлен дистрибьютор {dist.display_name}"
+                           + (f" (КПП {dist.kpp})" if dist.kpp else ""))
+        messages.success(request, f"Дистрибьютор «{dist.name or dist.inn}» добавлен.")
+        return redirect("directories:distributor_list")
+
+    # Step 1: ИНН lookup.
     form = DistributorAddForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         try:
-            dist = create_distributor_from_inn(form.cleaned_data["inn"])
+            candidates = lookup_distributor_candidates(form.cleaned_data["inn"])
         except OrgLookupError as exc:
             form.add_error("inn", str(exc))
         else:
-            log_action(request, ActionType.DISTRIBUTOR_CREATE, target=dist,
-                       summary=f"Добавлен дистрибьютор {dist.display_name}")
-            messages.success(request, f"Дистрибьютор «{dist.name or dist.inn}» добавлен.")
-            return redirect("directories:distributor_list")
-    return render(request, "directories/distributor_form.html", {"form": form, "mode": "add"})
+            return render(request, "directories/distributor_add.html", {
+                "step": "choose",
+                "inn": form.cleaned_data["inn"],
+                "candidates": candidates,
+            })
+    return render(request, "directories/distributor_add.html", {"step": "inn", "form": form})
 
 
 @login_required

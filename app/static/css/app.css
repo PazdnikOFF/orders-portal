@@ -133,6 +133,17 @@ select.status-select{border-radius:12px;border:1px solid var(--border);padding:3
 .org-option .oo-name{font-weight:600}
 .org-option-msg{padding:8px 10px;font-size:13px}
 .org-option-msg.err{color:var(--danger)}
+/* Distributor combo reads as a dropdown: chevron caret + pointer, still typeable. */
+[data-distributor-combo] .org-search{
+  cursor:pointer;padding-right:30px;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%236b7280' stroke-width='1.6' d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center}
+/* Branch (КПП) choice on adding a distributor. */
+.org-choice-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.org-choice{display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--border);
+  border-radius:6px;cursor:pointer}
+.org-choice:hover{background:#eff6ff;border-color:var(--accent)}
+.org-choice input{margin-top:3px}
 
 /* Kanban */
 .kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}

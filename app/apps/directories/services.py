@@ -68,18 +68,23 @@ def lookup_distributor_data(inn: str) -> OrgData:
     return candidates[0]
 
 
-def create_distributor_from_inn(inn: str) -> Distributor:
-    """
-    Create a new Distributor by INN (admin action). Name etc. are pulled from
-    DaData. Raises OrgLookupError if the INN already exists in the directory.
-    """
+def lookup_distributor_candidates(inn: str) -> list[OrgData]:
+    """All organizations matching an INN (head office + branches by КПП)."""
     inn = (inn or "").strip()
+    candidates = _provider_candidates(inn)
+    if not candidates:
+        raise OrgLookupError(f"Организация с ИНН {inn} не найдена.")
+    return candidates
+
+
+def create_distributor(data: OrgData) -> Distributor:
+    """Create a Distributor from a chosen provider candidate (one INN = one)."""
+    inn = (data.inn or "").strip()
     if Distributor.objects.filter(inn=inn).exists():
         raise OrgLookupError(f"Дистрибьютор с ИНН {inn} уже есть в справочнике.")
-    data = lookup_distributor_data(inn)
     provider_name = (settings.ORG_PROVIDER or "stub").lower()
     return Distributor.objects.create(
-        inn=data.inn or inn,
+        inn=inn,
         name=data.name,
         full_name=data.full_name,
         kpp=data.kpp or "",
@@ -90,6 +95,13 @@ def create_distributor_from_inn(inn: str) -> Distributor:
         is_active=True,
         updated_at=timezone.now(),
     )
+
+
+def create_distributor_from_inn(inn: str) -> Distributor:
+    """Create by INN using the first candidate (no branch choice — used by API)."""
+    if Distributor.objects.filter(inn=(inn or "").strip()).exists():
+        raise OrgLookupError(f"Дистрибьютор с ИНН {inn} уже есть в справочнике.")
+    return create_distributor(lookup_distributor_candidates(inn)[0])
 
 
 def refresh_distributor_from_provider(distributor: Distributor) -> Distributor:
