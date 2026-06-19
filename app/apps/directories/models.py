@@ -55,3 +55,52 @@ class Organization(models.Model):
         if self.ogrn:
             return f"https://www.rusprofile.ru/egrul?ogrn={self.ogrn}"
         return "https://www.rusprofile.ru/"
+
+
+class Distributor(models.Model):
+    """
+    Справочник дистрибьюторов — отдельная сущность (не Organization).
+
+    Заводится ТОЛЬКО администратором: вводится ИНН, наименование подтягивается
+    из DaData. Один ИНН = один дистрибьютор (в отличие от Organization, где
+    ключ (ИНН, КПП) и допускаются филиалы). Удалять записи нельзя — только
+    отключать (is_active=False): отключённый не предлагается к выбору в новых
+    заказах, но остаётся привязанным к уже существующим.
+    """
+
+    inn = models.CharField("ИНН", max_length=12, unique=True, db_index=True)
+    name = models.CharField("Наименование", max_length=500, blank=True)
+    full_name = models.CharField("Полное наименование", max_length=1000, blank=True)
+    kpp = models.CharField("КПП", max_length=9, blank=True)
+    ogrn = models.CharField("ОГРН", max_length=15, blank=True)
+    address = models.CharField("Юридический адрес", max_length=1000, blank=True)
+    status = models.CharField("Статус организации", max_length=50, blank=True)
+    source = models.CharField("Источник данных", max_length=50, blank=True)
+    is_active = models.BooleanField("Активен", default=True, db_index=True)
+    created_at = models.DateTimeField("Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField("Дата последнего обновления", default=timezone.now)
+
+    class Meta:
+        verbose_name = "Дистрибьютор"
+        verbose_name_plural = "Дистрибьюторы"
+        ordering = ["name", "inn"]
+
+    def __str__(self):
+        return self.display_name
+
+    @property
+    def display_name(self) -> str:
+        """Display — «Наименование (ИНН)» (как у Organization, amendment §8)."""
+        label = self.name or self.full_name or "Без наименования"
+        return f"{label} ({self.inn})"
+
+    @property
+    def option_label(self) -> str:
+        """Dropdown label for the card combobox."""
+        return self.display_name
+
+    @property
+    def rusprofile_url(self) -> str:
+        if self.ogrn:
+            return f"https://www.rusprofile.ru/egrul?ogrn={self.ogrn}"
+        return "https://www.rusprofile.ru/"

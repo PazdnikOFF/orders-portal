@@ -11,7 +11,7 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_http_methods
 
 from apps.accounts.models import Role, User
-from apps.directories.models import Organization
+from apps.directories.models import Distributor, Organization
 
 from . import matrix
 from .forms import OrderForm
@@ -98,7 +98,7 @@ def _filter_options(request) -> dict:
     return {
         "dl_managers": managers,
         "dl_distributors": _distinct_names(
-            Organization.objects.filter(distributor_orders__in=base).values_list("name", flat=True)),
+            Distributor.objects.filter(orders__in=base).values_list("name", flat=True)),
         "dl_potentials": _distinct_names(
             Organization.objects.filter(potential_user_orders__in=base).values_list("name", flat=True)),
         "dl_participants": _distinct_names(

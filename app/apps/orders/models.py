@@ -59,8 +59,8 @@ class Order(models.Model):
         related_name="managed_orders", verbose_name="Менеджер",
     )
     distributor = models.ForeignKey(
-        "directories.Organization", on_delete=models.PROTECT,
-        related_name="distributor_orders", verbose_name="Дистрибьютор",
+        "directories.Distributor", on_delete=models.PROTECT,
+        related_name="orders", verbose_name="Дистрибьютор",
     )
     potential_user = models.ForeignKey(
         "directories.Organization", on_delete=models.PROTECT,

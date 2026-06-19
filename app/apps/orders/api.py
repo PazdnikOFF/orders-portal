@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from django.core.exceptions import PermissionDenied, ValidationError
 
 from apps.accounts.models import Role, User
-from apps.directories.services import upsert_organization
+from apps.directories.services import resolve_distributor, upsert_organization
 from apps.integrations.providers import OrgLookupError
 
 from .models import Order, Status
@@ -20,9 +20,13 @@ from .services import (
 
 
 def _resolve_orgs(data: dict) -> dict:
-    """Translate INN-based API input into the org-instance form services expect."""
+    """Translate INN-based API input into the instances services expect.
+
+    Distributor is resolved from the admin-managed directory (NOT auto-created);
+    potential user / participants are upserted from the provider as before.
+    """
     cleaned = dict(data)
-    cleaned["distributor_org"] = upsert_organization(data["distributor_inn"])
+    cleaned["distributor_org"] = resolve_distributor(data["distributor_inn"])
     cleaned["potential_user_org"] = upsert_organization(data["potential_user_inn"])
     cleaned["participant_orgs"] = [upsert_organization(i) for i in data.get("participant_inns", [])]
     return cleaned

@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from apps.integrations.providers import OrgData, OrgLookupError, get_provider
 
-from .models import Organization
+from .models import Distributor, Organization
 
 CACHE_PREFIX = "org_suggest:"
 
@@ -55,3 +55,69 @@ def upsert_organization(inn: str) -> Organization:
     if not candidates:
         raise OrgLookupError(f"Организация с ИНН {inn} не найдена.")
     return _upsert_one(candidates[0])
+
+
+# --------------------------------------------------------------------------- #
+# Distributors — separate admin-managed directory (один ИНН = один дистрибьютор)
+# --------------------------------------------------------------------------- #
+def lookup_distributor_data(inn: str) -> OrgData:
+    """Resolve company data by INN via the provider (head office — first match)."""
+    candidates = _provider_candidates(inn)
+    if not candidates:
+        raise OrgLookupError(f"Организация с ИНН {inn} не найдена.")
+    return candidates[0]
+
+
+def create_distributor_from_inn(inn: str) -> Distributor:
+    """
+    Create a new Distributor by INN (admin action). Name etc. are pulled from
+    DaData. Raises OrgLookupError if the INN already exists in the directory.
+    """
+    inn = (inn or "").strip()
+    if Distributor.objects.filter(inn=inn).exists():
+        raise OrgLookupError(f"Дистрибьютор с ИНН {inn} уже есть в справочнике.")
+    data = lookup_distributor_data(inn)
+    provider_name = (settings.ORG_PROVIDER or "stub").lower()
+    return Distributor.objects.create(
+        inn=data.inn or inn,
+        name=data.name,
+        full_name=data.full_name,
+        kpp=data.kpp or "",
+        ogrn=data.ogrn,
+        address=data.address,
+        status=data.status,
+        source=provider_name,
+        is_active=True,
+        updated_at=timezone.now(),
+    )
+
+
+def refresh_distributor_from_provider(distributor: Distributor) -> Distributor:
+    """Re-pull a distributor's data from the provider by its INN."""
+    data = lookup_distributor_data(distributor.inn)
+    distributor.name = data.name or distributor.name
+    distributor.full_name = data.full_name or distributor.full_name
+    distributor.kpp = data.kpp or distributor.kpp
+    distributor.ogrn = data.ogrn or distributor.ogrn
+    distributor.address = data.address or distributor.address
+    distributor.status = data.status or distributor.status
+    distributor.updated_at = timezone.now()
+    distributor.save()
+    return distributor
+
+
+def resolve_distributor(inn: str) -> Distributor:
+    """
+    Resolve an existing active distributor by INN (used by the REST API).
+    Distributors are NOT auto-created here — only the admin adds them.
+    """
+    inn = (inn or "").strip()
+    dist = Distributor.objects.filter(inn=inn).first()
+    if dist is None:
+        raise OrgLookupError(
+            f"Дистрибьютор с ИНН {inn} не найден в справочнике. "
+            f"Его должен сначала добавить администратор."
+        )
+    if not dist.is_active:
+        raise OrgLookupError(f"Дистрибьютор с ИНН {inn} отключён.")
+    return dist

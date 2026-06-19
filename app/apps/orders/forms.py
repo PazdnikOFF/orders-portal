@@ -5,10 +5,11 @@ and the chosen Organization is submitted by id. Field availability is gated by
 the stage/role matrix — non-editable fields are rendered read-only.
 """
 from django import forms
+from django.db import models
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
-from apps.directories.models import Organization
+from apps.directories.models import Distributor, Organization
 
 from . import matrix
 from .models import Status
@@ -31,8 +32,9 @@ class OrderForm(forms.Form):
         empty_label="— выберите менеджера —",
     )
     distributor_org = forms.ModelChoiceField(
-        label="Дистрибьютор", queryset=Organization.objects.all(),
-        widget=forms.HiddenInput(),
+        label="Дистрибьютор", queryset=Distributor.objects.all(),
+        widget=forms.Select(attrs={"class": "input"}),
+        empty_label="— выберите дистрибьютора —",
     )
     potential_user_org = forms.ModelChoiceField(
         label="Потенциальный пользователь", queryset=Organization.objects.all(),
@@ -71,6 +73,20 @@ class OrderForm(forms.Form):
         self.user = user
         self.stage = stage
         self.is_create = is_create
+
+        # Дистрибьютор выбирается только из активных записей справочника. Но если
+        # к редактируемому заказу уже привязан отключённый дистрибьютор — его id
+        # надо оставить валидным (иначе сохранение упадёт). Поэтому queryset =
+        # активные + текущий выбранный.
+        active = Distributor.objects.filter(is_active=True)
+        current_pk = (self.initial or {}).get("distributor_org")
+        if current_pk:
+            self.fields["distributor_org"].queryset = (
+                Distributor.objects.filter(models.Q(is_active=True) | models.Q(pk=current_pk))
+            )
+        else:
+            self.fields["distributor_org"].queryset = active
+
         # Disable any field the user may not edit at this stage (server-enforced).
         for form_field, matrix_field in self.FIELD_TO_MATRIX.items():
             if not matrix.can_edit_field(user, matrix_field, stage):
