@@ -18,6 +18,9 @@ class ActionType(models.TextChoices):
     BACKUP_CREATE = "backup_create", "Создание резервной копии"
     BACKUP_RESTORE = "backup_restore", "Восстановление из копии"
     BACKUP_DELETE = "backup_delete", "Удаление резервной копии"
+    DISTRIBUTOR_CREATE = "distributor_create", "Добавление дистрибьютора"
+    DISTRIBUTOR_UPDATE = "distributor_update", "Изменение дистрибьютора"
+    DISTRIBUTOR_TOGGLE = "distributor_toggle", "Вкл/выкл дистрибьютора"
 
 
 class ActionLog(models.Model):

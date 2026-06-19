@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Дистрибьютор{% endblock %}
+{% block content %}
+<div class="panel card-section" style="max-width:560px">
+  <h3>{% if mode == 'add' %}Новый дистрибьютор{% else %}Изменение: {{ dist.name|default:dist.inn }}{% endif %}</h3>
+
+  {% if mode == 'edit' %}
+    <div class="field">
+      <label>ИНН</label>
+      <div class="readonly-value">{{ dist.inn }}{% if dist.kpp %} · КПП {{ dist.kpp }}{% endif %}</div>
+      <div class="hint">ИНН не редактируется. Чтобы изменить — добавьте нового дистрибьютора.</div>
+    </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% for field in form %}
+      <div class="field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="hint">{{ field.help_text }}</div>{% endif %}
+        {% for e in field.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+      </div>
+    {% endfor %}
+    <div class="toolbar">
+      <button class="btn" type="submit">{% if mode == 'add' %}Добавить{% else %}Сохранить{% endif %}</button>
+      <a class="btn secondary" href="{% url 'directories:distributor_list' %}">Отмена</a>
+    </div>
+  </form>
+
+  {% if mode == 'edit' %}
+    <hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">
+    <form method="post" action="{% url 'directories:distributor_refresh' dist.pk %}">
+      {% csrf_token %}
+      <button class="btn secondary sm" type="submit">↻ Обновить данные из DaData</button>
+      <span class="hint">Перетянет наименование и реквизиты по ИНН {{ dist.inn }}.</span>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

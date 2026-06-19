@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Дистрибьюторы{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <strong>Дистрибьюторы</strong>
+  <form method="get" action="{% url 'directories:distributor_list' %}" style="display:flex;gap:6px;align-items:center">
+    <input type="text" name="q" class="input" value="{{ q }}" placeholder="назв./ИНН" style="width:220px">
+    {% if show_all %}<input type="hidden" name="show_all" value="1">{% endif %}
+    <button class="btn secondary sm" type="submit">Найти</button>
+  </form>
+  <label class="check-inline">
+    <input type="checkbox" onchange="location.href='?{% if q %}q={{ q|urlencode }}&{% endif %}{% if not show_all %}show_all=1{% endif %}'"
+           {% if show_all %}checked{% endif %}>
+    Показывать отключённых
+  </label>
+  <div class="spacer"></div>
+  <a class="btn" href="{% url 'directories:distributor_add' %}">+ Добавить дистрибьютора</a>
+</div>
+
+<div class="panel" style="overflow:auto">
+  <table class="grid">
+    <thead>
+      <tr><th>Наименование</th><th>ИНН</th><th>КПП</th><th>Статус</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for d in distributors %}
+        <tr{% if not d.is_active %} class="row-cancelled"{% endif %}>
+          <td>
+            <a href="{{ d.rusprofile_url }}" target="_blank" rel="noopener">{{ d.name|default:d.full_name|default:"—" }}</a>
+          </td>
+          <td>{{ d.inn }}</td>
+          <td>{{ d.kpp|default:"—" }}</td>
+          <td>
+            {% if d.is_active %}<span class="status produced">активен</span>
+            {% else %}<span class="status cancelled">отключён</span>{% endif %}
+          </td>
+          <td class="row-actions">
+            <a class="btn ghost sm" href="{% url 'directories:distributor_edit' d.pk %}">Изменить</a>
+            <form method="post" action="{% url 'directories:distributor_toggle' d.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button class="btn {% if d.is_active %}danger{% else %}secondary{% endif %} sm" type="submit">
+                {% if d.is_active %}Отключить{% else %}Включить{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="muted" style="text-align:center;padding:20px">
+          {% if q %}Ничего не найдено{% else %}Дистрибьюторов пока нет — добавьте первого.{% endif %}
+        </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
