@@ -16,8 +16,9 @@ Params: name (hidden field), value_org (Distributor|None), disabled.
       <a class="org-link"{% if not value_org %} hidden{% endif %} target="_blank" rel="noopener"
          href="{{ value_org.rusprofile_url|default:'#' }}">{% if value_org %}{{ value_org.display_name }}{% endif %}</a>
       <input type="text" class="input org-search"{% if value_org %} hidden{% endif %}
-             autocomplete="off" placeholder="Название или ИНН…"
-             oninput="distributorSearchInput(this)" onkeydown="orgComboKeydown(event)">
+             autocomplete="off" placeholder="Выберите из списка или начните вводить…"
+             oninput="distributorSearchInput(this)" onfocus="distributorShowAll(this)"
+             onkeydown="orgComboKeydown(event)">
       <button type="button" class="btn secondary sm org-clear"{% if not value_org %} hidden{% endif %}
               onclick="orgComboClear(this)" title="Изменить">✕</button>
     </div>

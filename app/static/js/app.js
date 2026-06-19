@@ -380,27 +380,36 @@ function orgSearchInput(input) {
 /* Distributor combobox: smart search over the LOCAL directory by name or ИНН
    (admin-managed; not a DaData lookup). Picking reuses selectOrgOption() since
    the option markup / data attributes are identical. */
-function distributorSearchInput(input) {
-  var combo = input.closest("[data-org-combo]");
+function _distributorFetch(combo, q) {
   var opts = combo ? combo.querySelector(".org-options") : null;
   if (!opts) return;
+  opts.innerHTML = '<div class="org-option-msg muted">Загрузка…</div>';
+  fetch("/directories/distributor-suggest/?q=" + encodeURIComponent(q || ""), {
+    headers: { "X-Requested-With": "XMLHttpRequest" },
+  })
+    .then(function (r) { return r.text(); })
+    .then(function (html) { opts.innerHTML = html; })
+    .catch(function () {
+      opts.innerHTML = '<div class="org-option-msg err">Ошибка поиска дистрибьютора</div>';
+    });
+}
 
-  var q = (input.value || "").trim();
+function distributorSearchInput(input) {
+  var combo = input.closest("[data-org-combo]");
   var prev = _orgSearchTimers.get(input);
   if (prev) clearTimeout(prev);
-
-  if (q.length < 1) { opts.innerHTML = ""; return; }
+  // Empty input -> show the full active list (same as on focus).
   _orgSearchTimers.set(input, setTimeout(function () {
-    opts.innerHTML = '<div class="org-option-msg muted">Поиск…</div>';
-    fetch("/directories/distributor-suggest/?q=" + encodeURIComponent(q), {
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    })
-      .then(function (r) { return r.text(); })
-      .then(function (html) { opts.innerHTML = html; })
-      .catch(function () {
-        opts.innerHTML = '<div class="org-option-msg err">Ошибка поиска дистрибьютора</div>';
-      });
+    _distributorFetch(combo, (input.value || "").trim());
   }, 250));
+}
+
+/* On focus / click — show the whole active distributor list so the user can
+   pick from a dropdown without typing anything. */
+function distributorShowAll(input) {
+  var combo = input.closest("[data-org-combo]");
+  var opts = combo ? combo.querySelector(".org-options") : null;
+  if (opts && opts.children.length === 0) _distributorFetch(combo, "");
 }
 
 /* Pick an org: switch the combo to the read-only «chip» state (link to

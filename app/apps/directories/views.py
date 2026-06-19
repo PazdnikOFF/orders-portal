@@ -47,8 +47,14 @@ def distributor_suggest(request):
     q = (request.GET.get("q") or "").strip()
     qs = Distributor.objects.filter(is_active=True)
     if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(full_name__icontains=q) | Q(inn__icontains=q))
-    return render(request, "directories/_distributor_options.html", {"orgs": qs[:15]})
+        # Typed query — narrow by name/INN, show the top matches.
+        qs = qs.filter(
+            Q(name__icontains=q) | Q(full_name__icontains=q) | Q(inn__icontains=q)
+        )[:15]
+    else:
+        # No query (field focused) — show the full active list to pick from.
+        qs = qs[:200]
+    return render(request, "directories/_distributor_options.html", {"orgs": qs})
 
 
 # --------------------------------------------------------------------------- #
