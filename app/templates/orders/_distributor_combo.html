@@ -1,0 +1,26 @@
+{% comment %}
+Distributor combobox with smart local search (name/ИНН).
+
+Same DOM as the organization combo (data-org-combo, .org-id, data-inn) so the
+existing selectOrgOption() / cross-field INN checks / dirty-tracking all work
+unchanged — only the search source differs (local Distributor table, not DaData).
+
+Params: name (hidden field), value_org (Distributor|None), disabled.
+{% endcomment %}
+{% if disabled %}
+  <div class="readonly-value">{% if value_org %}{{ value_org.display_name }}{% else %}—{% endif %}</div>
+{% else %}
+  <div class="org-combo" data-org-combo data-distributor-combo data-inn="{{ value_org.inn|default:'' }}">
+    <input type="hidden" name="{{ name }}" class="org-id" value="{{ value_org.pk|default:'' }}">
+    <div class="org-line">
+      <a class="org-link"{% if not value_org %} hidden{% endif %} target="_blank" rel="noopener"
+         href="{{ value_org.rusprofile_url|default:'#' }}">{% if value_org %}{{ value_org.display_name }}{% endif %}</a>
+      <input type="text" class="input org-search"{% if value_org %} hidden{% endif %}
+             autocomplete="off" placeholder="Название или ИНН…"
+             oninput="distributorSearchInput(this)" onkeydown="orgComboKeydown(event)">
+      <button type="button" class="btn secondary sm org-clear"{% if not value_org %} hidden{% endif %}
+              onclick="orgComboClear(this)" title="Изменить">✕</button>
+    </div>
+    <div class="org-options"></div>
+  </div>
+{% endif %}

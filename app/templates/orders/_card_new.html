@@ -19,7 +19,7 @@
 
         <div class="field">
           <label>{{ form.distributor_org.label }} *</label>
-          {{ form.distributor_org }}
+          {% include "orders/_distributor_combo.html" with name="distributor_org" value_org=None %}
           {% for e in form.distributor_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 

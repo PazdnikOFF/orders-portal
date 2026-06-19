@@ -36,6 +36,21 @@ def org_suggest(request):
     return render(request, "directories/_org_options.html", {"orgs": orgs})
 
 
+@login_required
+@require_http_methods(["GET"])
+def distributor_suggest(request):
+    """
+    Smart search over the local distributor directory (active only) by name or
+    INN — feeds the order-card combobox dropdown. Returns the same option
+    partial as the organization combobox (identical data attributes).
+    """
+    q = (request.GET.get("q") or "").strip()
+    qs = Distributor.objects.filter(is_active=True)
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(full_name__icontains=q) | Q(inn__icontains=q))
+    return render(request, "directories/_distributor_options.html", {"orgs": qs[:15]})
+
+
 # --------------------------------------------------------------------------- #
 # Distributor directory — admin only. Records can be disabled, never deleted.
 # --------------------------------------------------------------------------- #

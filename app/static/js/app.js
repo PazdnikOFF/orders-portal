@@ -377,6 +377,32 @@ function orgSearchInput(input) {
   }, 450));
 }
 
+/* Distributor combobox: smart search over the LOCAL directory by name or ИНН
+   (admin-managed; not a DaData lookup). Picking reuses selectOrgOption() since
+   the option markup / data attributes are identical. */
+function distributorSearchInput(input) {
+  var combo = input.closest("[data-org-combo]");
+  var opts = combo ? combo.querySelector(".org-options") : null;
+  if (!opts) return;
+
+  var q = (input.value || "").trim();
+  var prev = _orgSearchTimers.get(input);
+  if (prev) clearTimeout(prev);
+
+  if (q.length < 1) { opts.innerHTML = ""; return; }
+  _orgSearchTimers.set(input, setTimeout(function () {
+    opts.innerHTML = '<div class="org-option-msg muted">Поиск…</div>';
+    fetch("/directories/distributor-suggest/?q=" + encodeURIComponent(q), {
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+    })
+      .then(function (r) { return r.text(); })
+      .then(function (html) { opts.innerHTML = html; })
+      .catch(function () {
+        opts.innerHTML = '<div class="org-option-msg err">Ошибка поиска дистрибьютора</div>';
+      });
+  }, 250));
+}
+
 /* Pick an org: switch the combo to the read-only «chip» state (link to
    Rusprofile). Text can no longer be edited — only cleared/removed. */
 function selectOrgOption(btn) {

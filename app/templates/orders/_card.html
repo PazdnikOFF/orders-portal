@@ -20,15 +20,11 @@
           {% for e in form.manager.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
-        {# Дистрибьютор — выбор из справочника #}
+        {# Дистрибьютор — комбобокс с умным поиском по справочнику #}
         <div class="field">
           <label>{{ form.distributor_org.label }}</label>
-          {% if form.distributor_org.field.disabled %}
-            <div class="readonly-value">{{ order.distributor.display_name }}</div>
-          {% else %}
-            {{ form.distributor_org }}
-            {% if not order.distributor.is_active %}<div class="hint">⚠ Текущий дистрибьютор отключён в справочнике.</div>{% endif %}
-          {% endif %}
+          {% include "orders/_distributor_combo.html" with name="distributor_org" value_org=order.distributor disabled=form.distributor_org.field.disabled %}
+          {% if not order.distributor.is_active and not form.distributor_org.field.disabled %}<div class="hint">⚠ Текущий дистрибьютор отключён в справочнике.</div>{% endif %}
           {% for e in form.distributor_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
