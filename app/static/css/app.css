@@ -56,6 +56,8 @@ table.grid tbody tr{cursor:pointer}
    wraps within its column. */
 table.orders-grid{table-layout:fixed}
 table.orders-grid td{overflow-wrap:anywhere}
+/* Order number (col 8) stays on one line — РЭ-000001 must not break. */
+table.orders-grid td:nth-child(8){overflow-wrap:normal;white-space:nowrap}
 /* Custom filter autocomplete: the input keeps its column width, but the
    suggestions dropdown auto-sizes to the longest option (native <datalist>
    can't — its width is locked to the input and it truncates). */
