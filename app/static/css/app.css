@@ -51,12 +51,21 @@ table.grid th,table.grid td{padding:8px 10px;border-bottom:1px solid var(--borde
 table.grid th{background:#eef2f7;font-size:12px;text-transform:uppercase;color:#54616e;
   letter-spacing:.4px}
 table.grid tbody tr{cursor:pointer}
-/* Wider filter inputs for text columns so long company names / datalist
-   suggestions aren't truncated by the native dropdown (table scrolls if wide). */
+/* Long company names get truncated in narrow filter inputs and in the native
+   datalist dropdown (its width follows the input). Keep the columns reasonably
+   wide, and on focus let the text filters expand over the neighbours so the
+   whole name and all suggestions are readable. */
+table.grid tr.filter-row th{position:relative}
 .filter-row input[name="f_distributor"],
 .filter-row input[name="f_potential"],
 .filter-row input[name="f_participant"],
-.filter-row input[name="f_kit"]{min-width:220px}
+.filter-row input[name="f_kit"]{min-width:200px}
+.filter-row input[name="f_distributor"]:focus,
+.filter-row input[name="f_potential"]:focus,
+.filter-row input[name="f_participant"]:focus,
+.filter-row input[name="f_kit"]:focus{
+  position:absolute;z-index:30;left:6px;top:5px;width:400px;max-width:none;
+  box-shadow:0 4px 14px rgba(16,24,40,.18)}
 /* Row tint by status (TЗ UX). Hover/selected below override via higher specificity. */
 table.grid tbody tr.row-planned td{background:#eff6ff}
 table.grid tbody tr.row-in_progress td{background:#fff7ed}
