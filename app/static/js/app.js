@@ -428,6 +428,11 @@ function filterSuggest(input, datalistId) {
   var dl = document.getElementById(datalistId);
   if (!box || !dl) return;
 
+  // Close any other open filter dropdown.
+  document.querySelectorAll(".filter-options").forEach(function (o) {
+    if (o !== box) o.innerHTML = "";
+  });
+
   var q = (input.value || "").trim().toLowerCase();
   var seen = {};
   var matches = [];
@@ -455,6 +460,23 @@ function filterSuggest(input, datalistId) {
     };
     box.appendChild(b);
   });
+}
+
+/* Close the dropdown when focus leaves the field (option clicks use
+   mousedown+preventDefault, so they don't trigger this). */
+function filterBlur(input) {
+  var combo = input.closest(".filter-combo");
+  var box = combo ? combo.querySelector(".filter-options") : null;
+  if (box) setTimeout(function () { box.innerHTML = ""; }, 120);
+}
+
+/* Clear a single column filter (the ✕ next to a chosen value). */
+function clearFilter(btn) {
+  var combo = btn.closest(".filter-combo");
+  var input = combo ? combo.querySelector("input") : null;
+  if (!input) return;
+  input.value = "";
+  if (input.form) input.form.submit();
 }
 
 /* Pick an org: switch the combo to the read-only «chip» state (link to

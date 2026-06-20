@@ -65,6 +65,10 @@ table.grid tbody tr{cursor:pointer}
   white-space:nowrap;text-transform:none;letter-spacing:0;color:var(--text)}
 .filter-option:last-child{border-bottom:0}
 .filter-option:hover{background:#eff6ff}
+.filter-combo .input{padding-right:24px}
+.filter-clear{position:absolute;right:3px;top:50%;transform:translateY(-50%);z-index:5;
+  border:0;background:none;cursor:pointer;color:#9aa3af;font-size:12px;line-height:1;padding:2px 4px}
+.filter-clear:hover{color:var(--danger)}
 /* Row tint by status (TЗ UX). Hover/selected below override via higher specificity. */
 table.grid tbody tr.row-planned td{background:#eff6ff}
 table.grid tbody tr.row-in_progress td{background:#fff7ed}
