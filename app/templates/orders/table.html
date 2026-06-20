@@ -46,8 +46,9 @@
         <th><a class="sort-link" href="{% sort_url 'status' %}">Статус{% sort_arrow 'status' %}</a></th>
       </tr>
       <tr class="filter-row">
-        <th><input form="filters" name="f_manager" class="input" value="{{ request.GET.f_manager }}"
-                   list="dl-managers" placeholder="фильтр…" onchange="this.form.submit()"></th>
+        <th><div class="filter-combo"><input form="filters" name="f_manager" class="input" value="{{ request.GET.f_manager }}"
+                   autocomplete="off" placeholder="фильтр…" onchange="this.form.submit()" onblur="filterBlur(this)"
+                   oninput="filterSuggest(this,'dl-managers')" onfocus="filterSuggest(this,'dl-managers')">{% if request.GET.f_manager %}<button type="button" class="filter-clear" title="Очистить" onclick="clearFilter(this)">✕</button>{% endif %}<div class="filter-options"></div></div></th>
         <th><div class="filter-combo"><input form="filters" name="f_distributor" class="input" value="{{ request.GET.f_distributor }}"
                    autocomplete="off" placeholder="назв./ИНН" onchange="this.form.submit()" onblur="filterBlur(this)"
                    oninput="filterSuggest(this,'dl-distributors')" onfocus="filterSuggest(this,'dl-distributors')">{% if request.GET.f_distributor %}<button type="button" class="filter-clear" title="Очистить" onclick="clearFilter(this)">✕</button>{% endif %}<div class="filter-options"></div></div></th>
