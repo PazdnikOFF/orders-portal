@@ -51,6 +51,11 @@ table.grid th,table.grid td{padding:8px 10px;border-bottom:1px solid var(--borde
 table.grid th{background:#eef2f7;font-size:12px;text-transform:uppercase;color:#54616e;
   letter-spacing:.4px}
 table.grid tbody tr{cursor:pointer}
+/* Orders table: fixed column widths (via colgroup) so filter fields and
+   columns never shift when a filter narrows the result set. Cell content
+   wraps within its column. */
+table.orders-grid{table-layout:fixed}
+table.orders-grid td{overflow-wrap:anywhere}
 /* Custom filter autocomplete: the input keeps its column width, but the
    suggestions dropdown auto-sizes to the longest option (native <datalist>
    can't — its width is locked to the input and it truncates). */
