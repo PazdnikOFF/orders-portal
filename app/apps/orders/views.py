@@ -98,7 +98,7 @@ def _filter_options(request) -> dict:
     return {
         "dl_managers": managers,
         "dl_distributors": _distinct_names(
-            Distributor.objects.filter(orders__in=base).values_list("name", flat=True)),
+            Distributor.objects.filter(orders__in=base, is_active=True).values_list("name", flat=True)),
         "dl_potentials": _distinct_names(
             Organization.objects.filter(potential_user_orders__in=base).values_list("name", flat=True)),
         "dl_participants": _distinct_names(
