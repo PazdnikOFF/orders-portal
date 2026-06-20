@@ -44,14 +44,18 @@
       <tr class="filter-row">
         <th><input form="filters" name="f_manager" class="input" value="{{ request.GET.f_manager }}"
                    list="dl-managers" placeholder="фильтр…" onchange="this.form.submit()"></th>
-        <th><input form="filters" name="f_distributor" class="input" value="{{ request.GET.f_distributor }}"
-                   list="dl-distributors" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
-        <th><input form="filters" name="f_potential" class="input" value="{{ request.GET.f_potential }}"
-                   list="dl-potentials" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
-        <th><input form="filters" name="f_participant" class="input" value="{{ request.GET.f_participant }}"
-                   list="dl-participants" placeholder="назв./ИНН" onchange="this.form.submit()"></th>
-        <th><input form="filters" name="f_kit" class="input" value="{{ request.GET.f_kit }}"
-                   list="dl-kits" placeholder="фильтр…" onchange="this.form.submit()"></th>
+        <th><div class="filter-combo"><input form="filters" name="f_distributor" class="input" value="{{ request.GET.f_distributor }}"
+                   autocomplete="off" placeholder="назв./ИНН" onchange="this.form.submit()"
+                   oninput="filterSuggest(this,'dl-distributors')" onfocus="filterSuggest(this,'dl-distributors')"><div class="filter-options"></div></div></th>
+        <th><div class="filter-combo"><input form="filters" name="f_potential" class="input" value="{{ request.GET.f_potential }}"
+                   autocomplete="off" placeholder="назв./ИНН" onchange="this.form.submit()"
+                   oninput="filterSuggest(this,'dl-potentials')" onfocus="filterSuggest(this,'dl-potentials')"><div class="filter-options"></div></div></th>
+        <th><div class="filter-combo"><input form="filters" name="f_participant" class="input" value="{{ request.GET.f_participant }}"
+                   autocomplete="off" placeholder="назв./ИНН" onchange="this.form.submit()"
+                   oninput="filterSuggest(this,'dl-participants')" onfocus="filterSuggest(this,'dl-participants')"><div class="filter-options"></div></div></th>
+        <th><div class="filter-combo"><input form="filters" name="f_kit" class="input" value="{{ request.GET.f_kit }}"
+                   autocomplete="off" placeholder="фильтр…" onchange="this.form.submit()"
+                   oninput="filterSuggest(this,'dl-kits')" onfocus="filterSuggest(this,'dl-kits')"><div class="filter-options"></div></div></th>
         <th><input form="filters" name="f_request_date" type="date" class="input"
                    value="{{ request.GET.f_request_date }}" onchange="this.form.submit()"></th>
         <th>

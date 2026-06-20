@@ -51,21 +51,20 @@ table.grid th,table.grid td{padding:8px 10px;border-bottom:1px solid var(--borde
 table.grid th{background:#eef2f7;font-size:12px;text-transform:uppercase;color:#54616e;
   letter-spacing:.4px}
 table.grid tbody tr{cursor:pointer}
-/* Long company names get truncated in narrow filter inputs and in the native
-   datalist dropdown (its width follows the input). Keep the columns reasonably
-   wide, and on focus let the text filters expand over the neighbours so the
-   whole name and all suggestions are readable. */
-table.grid tr.filter-row th{position:relative}
-.filter-row input[name="f_distributor"],
-.filter-row input[name="f_potential"],
-.filter-row input[name="f_participant"],
-.filter-row input[name="f_kit"]{min-width:200px}
-.filter-row input[name="f_distributor"]:focus,
-.filter-row input[name="f_potential"]:focus,
-.filter-row input[name="f_participant"]:focus,
-.filter-row input[name="f_kit"]:focus{
-  position:absolute;z-index:30;left:6px;top:5px;width:400px;max-width:none;
-  box-shadow:0 4px 14px rgba(16,24,40,.18)}
+/* Custom filter autocomplete: the input keeps its column width, but the
+   suggestions dropdown auto-sizes to the longest option (native <datalist>
+   can't — its width is locked to the input and it truncates). */
+.filter-combo{position:relative}
+.filter-options{position:absolute;top:100%;left:0;z-index:40;margin-top:2px;
+  width:max-content;min-width:100%;max-width:520px;background:#fff;
+  border:1px solid var(--border);border-radius:6px;box-shadow:0 6px 18px rgba(16,24,40,.16);
+  max-height:280px;overflow:auto}
+.filter-options:empty{display:none}
+.filter-option{display:block;width:100%;text-align:left;background:none;border:0;
+  border-bottom:1px solid #eef1f5;padding:7px 10px;cursor:pointer;font-size:13px;
+  white-space:nowrap;text-transform:none;letter-spacing:0;color:var(--text)}
+.filter-option:last-child{border-bottom:0}
+.filter-option:hover{background:#eff6ff}
 /* Row tint by status (TЗ UX). Hover/selected below override via higher specificity. */
 table.grid tbody tr.row-planned td{background:#eff6ff}
 table.grid tbody tr.row-in_progress td{background:#fff7ed}

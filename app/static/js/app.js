@@ -36,8 +36,14 @@ var _pendingAfterSave = null;  // action to run after a save we initiated
 
   // --- Close any open org-combobox dropdown when clicking elsewhere ----------
   document.addEventListener("click", function (e) {
-    if (e.target.closest && (e.target.closest(".org-options") || e.target.closest(".org-search"))) return;
-    document.querySelectorAll(".org-options").forEach(function (o) { o.innerHTML = ""; });
+    var inOrg = e.target.closest && (e.target.closest(".org-options") || e.target.closest(".org-search"));
+    if (!inOrg) {
+      document.querySelectorAll(".org-options").forEach(function (o) { o.innerHTML = ""; });
+    }
+    var inFilter = e.target.closest && e.target.closest(".filter-combo");
+    if (!inFilter) {
+      document.querySelectorAll(".filter-options").forEach(function (o) { o.innerHTML = ""; });
+    }
   });
 
   // --- Auto-dismiss flash messages after 5 seconds --------------------------
@@ -410,6 +416,45 @@ function distributorShowAll(input) {
   var combo = input.closest("[data-org-combo]");
   var opts = combo ? combo.querySelector(".org-options") : null;
   if (opts && opts.children.length === 0) _distributorFetch(combo, "");
+}
+
+/* Custom table-filter autocomplete. Unlike a native <datalist> (whose dropdown
+   width is locked to the input width and truncates long values), this dropdown
+   sizes itself to the longest option while the input keeps its column width.
+   Option values come from the page's existing <datalist> (no backend change). */
+function filterSuggest(input, datalistId) {
+  var combo = input.closest(".filter-combo");
+  var box = combo ? combo.querySelector(".filter-options") : null;
+  var dl = document.getElementById(datalistId);
+  if (!box || !dl) return;
+
+  var q = (input.value || "").trim().toLowerCase();
+  var seen = {};
+  var matches = [];
+  var opts = dl.querySelectorAll("option");
+  for (var i = 0; i < opts.length; i++) {
+    var v = opts[i].value;
+    if (!v || seen[v]) continue;
+    if (q && v.toLowerCase().indexOf(q) === -1) continue;
+    seen[v] = 1;
+    matches.push(v);
+    if (matches.length >= 50) break;
+  }
+
+  box.innerHTML = "";
+  matches.forEach(function (v) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "filter-option";
+    b.textContent = v;
+    b.onmousedown = function (e) { e.preventDefault(); };   // keep input focus
+    b.onclick = function () {
+      input.value = v;
+      box.innerHTML = "";
+      if (input.form) input.form.submit();
+    };
+    box.appendChild(b);
+  });
 }
 
 /* Pick an org: switch the combo to the read-only «chip» state (link to
