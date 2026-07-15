@@ -24,6 +24,12 @@
         </div>
 
         <div class="field">
+          <label>{{ form.trading_org.label }}</label>
+          {% include "orders/_org_combo.html" with name="trading_org" value_org=None %}
+          {% for e in form.trading_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
+        <div class="field">
           <label>{{ form.potential_user_org.label }} *</label>
           {% include "orders/_org_combo.html" with name="potential_user_org" value_org=None %}
           {% for e in form.potential_user_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}

@@ -17,6 +17,7 @@ STAGE_CANCELLED = "cancelled"
 FIELDS = [
     "manager",
     "distributor",
+    "trading_org",
     "potential_user",
     "participants",
     "kit",
@@ -35,6 +36,7 @@ MATRIX = {
     #                 create  planned in_progress produced cancelled
     "manager":        {STAGE_CREATE: _T, STAGE_PLANNED: _F, STAGE_IN_PROGRESS: _T, STAGE_PRODUCED: _F, STAGE_CANCELLED: _F},
     "distributor":    {STAGE_CREATE: _T, STAGE_PLANNED: _F, STAGE_IN_PROGRESS: _F, STAGE_PRODUCED: _F, STAGE_CANCELLED: _F},
+    "trading_org":    {STAGE_CREATE: _T, STAGE_PLANNED: _F, STAGE_IN_PROGRESS: _F, STAGE_PRODUCED: _F, STAGE_CANCELLED: _F},
     "potential_user": {STAGE_CREATE: _T, STAGE_PLANNED: _F, STAGE_IN_PROGRESS: _F, STAGE_PRODUCED: _F, STAGE_CANCELLED: _F},
     "participants":   {STAGE_CREATE: _T, STAGE_PLANNED: _T, STAGE_IN_PROGRESS: _F, STAGE_PRODUCED: _F, STAGE_CANCELLED: _F},
     "kit":            {STAGE_CREATE: _T, STAGE_PLANNED: _T, STAGE_IN_PROGRESS: _F, STAGE_PRODUCED: _F, STAGE_CANCELLED: _F},

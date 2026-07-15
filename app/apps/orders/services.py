@@ -30,7 +30,8 @@ def visible_orders(user) -> QuerySet[Order]:
       - Manager: only records where he is the assigned «Менеджер».
     """
     qs = Order.objects.select_related(
-        "manager", "distributor", "potential_user", "created_by", "updated_by"
+        "manager", "distributor", "trading_org", "potential_user",
+        "created_by", "updated_by"
     ).prefetch_related("participants", "files")
 
     if user.sees_only_own_orders:
@@ -96,6 +97,7 @@ def create_order(request, cleaned) -> Order:
     order = Order(
         manager=cleaned["manager"],
         distributor=distributor,
+        trading_org=cleaned.get("trading_org"),
         potential_user=potential_user,
         kit=cleaned["kit"],
         forecast_date=cleaned["forecast_date"],
@@ -157,6 +159,17 @@ def update_order(request, order: Order, cleaned) -> Order:
                           order.distributor.display_name, org.display_name)
             order.distributor = org
             changed.append("distributor")
+
+    # «Торгующая организация» — необязательное поле, поэтому поддерживаем
+    # и выбор, и очистку (пустой комбобокс -> None).
+    if allowed("trading_org") and "trading_org" in cleaned:
+        new_org = cleaned.get("trading_org")
+        if (new_org.pk if new_org else None) != order.trading_org_id:
+            old_disp = order.trading_org.display_name if order.trading_org else ""
+            record_change(order, user, "trading_org", "Торгующая организация",
+                          old_disp, new_org.display_name if new_org else "")
+            order.trading_org = new_org
+            changed.append("trading_org")
 
     if allowed("potential_user") and (org := cleaned.get("potential_user_org")):
         if org.pk != order.potential_user_id:

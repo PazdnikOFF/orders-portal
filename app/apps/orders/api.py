@@ -27,6 +27,9 @@ def _resolve_orgs(data: dict) -> dict:
     """
     cleaned = dict(data)
     cleaned["distributor_org"] = resolve_distributor(data["distributor_inn"])
+    if "trading_org_inn" in data:
+        inn = (data["trading_org_inn"] or "").strip()
+        cleaned["trading_org"] = upsert_organization(inn) if inn else None
     cleaned["potential_user_org"] = upsert_organization(data["potential_user_inn"])
     cleaned["participant_orgs"] = [upsert_organization(i) for i in data.get("participant_inns", [])]
     return cleaned
@@ -36,6 +39,7 @@ class OrderReadSerializer(serializers.ModelSerializer):
     order_code = serializers.CharField(read_only=True)
     manager = serializers.CharField(source="manager.short_name", read_only=True)
     distributor = serializers.CharField(source="distributor.display_name", read_only=True)
+    trading_org = serializers.SerializerMethodField()
     potential_user = serializers.CharField(source="potential_user.display_name", read_only=True)
     participants = serializers.SerializerMethodField()
     status_display = serializers.CharField(source="get_status_display", read_only=True)
@@ -45,10 +49,13 @@ class OrderReadSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             "id", "order_number", "order_code", "manager", "distributor",
-            "potential_user", "participants", "kit", "request_date",
+            "trading_org", "potential_user", "participants", "kit", "request_date",
             "forecast_date", "status", "status_display", "file_url",
             "created_at", "updated_at",
         ]
+
+    def get_trading_org(self, obj):
+        return obj.trading_org.display_name if obj.trading_org else None
 
     def get_participants(self, obj):
         return [o.display_name for o in obj.participants.all()]
@@ -67,6 +74,9 @@ class OrderWriteSerializer(serializers.Serializer):
         queryset=User.objects.filter(role=Role.MANAGER, is_active=True)
     )
     distributor_inn = serializers.CharField(max_length=12)
+    trading_org_inn = serializers.CharField(
+        max_length=12, required=False, allow_blank=True, default=""
+    )
     potential_user_inn = serializers.CharField(max_length=12)
     participant_inns = serializers.ListField(
         child=serializers.CharField(max_length=12), required=False, default=list

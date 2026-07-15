@@ -28,6 +28,13 @@
           {% for e in form.distributor_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
         </div>
 
+        {# Торгующая организация — DaData-поиск по ИНН, заполняется при создании #}
+        <div class="field">
+          <label>{{ form.trading_org.label }}</label>
+          {% include "orders/_org_combo.html" with name="trading_org" value_org=order.trading_org disabled=form.trading_org.field.disabled %}
+          {% for e in form.trading_org.errors %}<ul class="errorlist"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+
         {# Потенциальный пользователь #}
         <div class="field">
           <label>{{ form.potential_user_org.label }}</label>

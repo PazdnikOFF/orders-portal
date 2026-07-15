@@ -62,6 +62,13 @@ class Order(models.Model):
         "directories.Distributor", on_delete=models.PROTECT,
         related_name="orders", verbose_name="Дистрибьютор",
     )
+    # «Торгующая организация» — необязательное поле, выбирается по ИНН через
+    # DaData (как «Потенциальный пользователь»), заполняется при создании.
+    trading_org = models.ForeignKey(
+        "directories.Organization", on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="trading_org_orders", verbose_name="Торгующая организация",
+    )
     potential_user = models.ForeignKey(
         "directories.Organization", on_delete=models.PROTECT,
         related_name="potential_user_orders", verbose_name="Потенциальный пользователь",

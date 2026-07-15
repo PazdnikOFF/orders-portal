@@ -36,6 +36,10 @@ class OrderForm(forms.Form):
         widget=forms.Select(attrs={"class": "input"}),
         empty_label="— выберите дистрибьютора —",
     )
+    trading_org = forms.ModelChoiceField(
+        label="Торгующая организация", queryset=Organization.objects.all(),
+        required=False, widget=forms.HiddenInput(),
+    )
     potential_user_org = forms.ModelChoiceField(
         label="Потенциальный пользователь", queryset=Organization.objects.all(),
         widget=forms.HiddenInput(),
@@ -61,6 +65,7 @@ class OrderForm(forms.Form):
     FIELD_TO_MATRIX = {
         "manager": "manager",
         "distributor_org": "distributor",
+        "trading_org": "trading_org",
         "potential_user_org": "potential_user",
         "participant_orgs": "participants",
         "kit": "kit",

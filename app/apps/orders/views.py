@@ -46,6 +46,7 @@ def _order_form_initial(order: Order) -> dict:
     return {
         "manager": order.manager_id,
         "distributor_org": order.distributor_id,
+        "trading_org": order.trading_org_id,
         "potential_user_org": order.potential_user_id,
         "participant_orgs": list(order.participants.values_list("pk", flat=True)),
         "kit": order.kit,
